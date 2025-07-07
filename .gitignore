@@ -1,0 +1,14 @@
+# 백업 파일들
+*.bak
+*.backup
+*.old
+*.tmp
+
+# 시스템 파일들
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 임시 파일들
+*~
+.#*
