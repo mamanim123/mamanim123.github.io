@@ -131,7 +131,7 @@ class GallerySlider {
     startAutoPlay() {
         this.autoPlayInterval = setInterval(() => {
             this.nextSlide();
-        }, 4000);
+        }, 2000);
     }
     
     stopAutoPlay() {
@@ -242,7 +242,7 @@ class ServicesSlider {
     startAutoPlay() {
         this.autoPlayInterval = setInterval(() => {
             this.nextSlide();
-        }, 5000);
+        }, 4000);
     }
     
     stopAutoPlay() {
@@ -301,7 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setInterval(() => {
             idx = (idx + 1) % imgList.length;
             cognitiveImg.src = imgList[idx];
-        }, 4000);
+        }, 2000);
     }
 });
 
@@ -328,7 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setInterval(() => {
             current = (current + 1) % slideImages.length;
             showSlide(current);
-        }, 4000);
+        }, 2000);
     }
 });
 
@@ -621,7 +621,7 @@ function startLeisureSlideshow() {
             img.style.display = (i === idx) ? 'block' : 'none';
         });
         idx = (idx + 1) % imgs.length;
-    }, 3000);
+    }, 2000);
 }
 
 // 물리치료 서비스 이미지 슬라이드쇼
@@ -639,7 +639,7 @@ function startPTSlideshow() {
             img.style.display = (i === idx) ? 'block' : 'none';
         });
         idx = (idx + 1) % imgs.length;
-    }, 3000);
+    }, 2000);
 }
 
 // 블로그 데이터 로드 함수
@@ -759,8 +759,8 @@ document.addEventListener('DOMContentLoaded', () => {
     startPTSlideshow();
     startLeisureSlideshow();
     
-    // 블로그 데이터 로드 (1초 후 자동 전환)
-    setTimeout(() => {
-        loadBlogPosts();
-    }, 1000);
+    // 블로그 데이터 로드 (1초 후 자동 전환) - 비활성화됨
+    // setTimeout(() => {
+    //     loadBlogPosts();
+    // }, 1000);
 });
