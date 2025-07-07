@@ -1,0 +1,25 @@
+{
+  "name": "cheongdam-rehab-landing",
+  "version": "1.0.0",
+  "description": "청담재활주간보호센터 랜딩페이지",
+  "main": "update-blog.js",
+  "scripts": {
+    "update": "node update-blog.js",
+    "start": "node blog-server.js",
+    "dev": "nodemon blog-server.js"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.12",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "playwright": "^1.53.2",
+    "puppeteer": "^21.0.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "sharp": "^0.32.0",
+    "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
