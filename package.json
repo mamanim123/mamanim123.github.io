@@ -1,0 +1,14 @@
+{
+  "name": "cheongdam-rehab-landing",
+  "version": "2.0.0",
+  "description": "청담재활주간보호센터 랜딩페이지",
+  "main": "update-blog-images-final.js",
+  "scripts": {
+    "update": "node update-blog-images-final.js"
+  },
+  "dependencies": {
+    "axios": "^1.10.0",
+    "cheerio": "^1.0.0-rc.12",
+    "xml2js": "^0.6.2"
+  }
+}
