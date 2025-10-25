@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git pull:*)",
+      "Bash(git push:*)",
+      "Bash(cp:*)",
+      "Bash(git add:*)",
+      "Bash(git reset:*)",
+      "Bash(git commit:*)",
+      "WebSearch",
+      "WebFetch(domain:unsplash.com)",
+      "WebFetch(domain:images.unsplash.com)",
+      "WebFetch(domain:www.freepik.com)",
+      "WebFetch(domain:hyoga.kr)",
+      "mcp__playwright-mcp__browser_navigate",
+      "mcp__playwright-mcp__browser_take_screenshot"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
