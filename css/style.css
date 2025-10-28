@@ -6,22 +6,22 @@
 }
 
 :root {
-    /* Color Palette */
-    --primary-color: #2c5aa0;
-    --primary-light: #4a7bc8;
-    --primary-dark: #1e3f73;
-    --secondary-color: #f8f9fa;
-    --accent-color: #e8f2ff;
-    --text-dark: #2d3748;
-    --text-light: #718096;
+    /* 어르신 친화적 푸른색 파스텔 팔레트 */
+    --primary-color: #7dd3fc;     /* 파스텔 하늘색 */
+    --primary-light: #bfdbfe;     /* 연한 파스텔 블루 */
+    --primary-dark: #0ea5e9;      /* 진한 파스텔 블루 */
+    --secondary-color: #f0f9ff;   /* 연한 하늘색 */
+    --accent-color: #e0f2fe;      /* 아주 연한 블루 */
+    --text-dark: #1f2937;         /* 진한 회색 (가독성 향상) */
+    --text-light: #6b7280;        /* 중간 회색 */
     --white: #ffffff;
-    --success: #38a169;
-    --warning: #ed8936;
-    --error: #e53e3e;
+    --success: #059669;           /* 성공 - 초록 계열 */
+    --warning: #f59e0b;           /* 주의 - 주황 */
+    --error: #dc2626;             /* 오류 - 빨간색 */
     
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, #2c5aa0 0%, #4a7bc8 100%);
-    --gradient-hero: linear-gradient(135deg, rgba(44, 90, 160, 0.9) 0%, rgba(74, 123, 200, 0.8) 100%);
+    /* 어르신 친화적 푸른색 파스텔 그라디언트 */
+    --gradient-primary: linear-gradient(135deg, #7dd3fc 0%, #bfdbfe 100%);
+    --gradient-hero: linear-gradient(135deg, rgba(125, 211, 252, 0.8) 0%, rgba(191, 219, 254, 0.7) 100%);
     --gradient-card: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
     
     /* Typography */
@@ -110,17 +110,19 @@ h1, h2, h3, h4, h5, h6 {
 /* Buttons */
 .btn {
     display: inline-block;
-    padding: 14px 32px;
+    padding: 20px 40px;
     border: none;
-    border-radius: var(--radius-medium);
-    font-size: 1rem;
-    font-weight: 500;
+    border-radius: var(--radius-large);
+    font-size: 1.3rem;
+    font-weight: 600;
     text-decoration: none;
     text-align: center;
     cursor: pointer;
     transition: var(--transition-normal);
     position: relative;
     overflow: hidden;
+    min-height: 48px;
+    line-height: 1.2;
 }
 
 .btn::before {
@@ -239,12 +241,11 @@ h1, h2, h3, h4, h5, h6 {
 /* Hero Section */
 .hero {
     height: 100vh;
-    background: 
-        linear-gradient(135deg, rgba(44, 90, 160, 0.3) 0%, rgba(74, 123, 200, 0.2) 50%, rgba(30, 63, 115, 0.4) 100%),
-        url('../images/52.jpg');
+    background-image: url('../images/hero-main.jpg');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
+    background-repeat: no-repeat;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -252,20 +253,20 @@ h1, h2, h3, h4, h5, h6 {
     overflow: hidden;
 }
 
-/* Animated background elements */
+/* Dark overlay for better text readability */
 .hero::before {
     content: '';
     position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: 
-        radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.1) 2px, transparent 2px),
-        radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-        radial-gradient(circle at 60% 40%, rgba(255, 255, 255, 0.08) 3px, transparent 3px);
-    background-size: 100px 100px, 50px 50px, 150px 150px;
-    animation: float 20s linear infinite;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        135deg,
+        rgba(0, 0, 0, 0.35) 0%,
+        rgba(0, 0, 0, 0.25) 50%,
+        rgba(0, 0, 0, 0.40) 100%
+    );
     z-index: 1;
 }
 
@@ -276,9 +277,11 @@ h1, h2, h3, h4, h5, h6 {
     left: 0;
     right: 0;
     bottom: 0;
-    background: 
-        linear-gradient(45deg, transparent 40%, rgba(255, 255, 255, 0.02) 50%, transparent 60%),
-        linear-gradient(-45deg, transparent 40%, rgba(255, 255, 255, 0.02) 50%, transparent 60%);
+    background: radial-gradient(
+        circle at 50% 50%,
+        transparent 0%,
+        rgba(0, 0, 0, 0.15) 100%
+    );
     z-index: 1;
 }
 
@@ -363,43 +366,81 @@ h1, h2, h3, h4, h5, h6 {
 
 .hero-content {
     position: relative;
-    z-index: 4; /* 파티클(z-index: 3)보다 높게 설정 */
-    text-align: center;
-    color: var(--white);
-    max-width: 900px;
+    z-index: 4;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+    max-width: 1200px;
+    width: 100%;
     padding: 0 20px;
     animation: heroContentSlideUp 1.2s ease-out;
 }
 
+.hero-text {
+    text-align: left;
+    color: var(--text-dark);
+}
+
+.hero-image {
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.hero-main-image {
+    width: 100%;
+    max-width: 500px;
+    height: auto;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s ease;
+}
+
+.hero-main-image:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.2);
+}
+
 .hero-title {
-    font-size: 4rem;
+    font-size: 4.5rem;
     margin-bottom: 2rem;
     font-family: var(--font-accent);
     animation: titleGlow 2s ease-in-out;
-    text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
     position: relative;
+    font-weight: 800;
+    line-height: 1.2;
 }
 
 .hero-subtitle {
     display: block;
-    font-size: 1.8rem;
-    font-weight: 300;
+    font-size: 2.2rem;
+    font-weight: 400;
     margin-bottom: 0.5rem;
-    opacity: 0.9;
+    opacity: 0.95;
+    color: #ffffff;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
 }
 
 .hero-main {
     display: block;
-    font-size: 5.5rem;
-    font-weight: 700;
+    font-size: 6.5rem;
+    font-weight: 900;
     color: #ffffff;
     margin-top: 1rem;
-    text-shadow: 0 2px 4px rgba(44, 90, 160, 0.8);
+    text-shadow: 4px 4px 15px rgba(0, 0, 0, 0.8);
+    line-height: 1.1;
 }
 
-.hero-main-line1,
+.hero-main-line1 {
+    display: block;
+}
+
 .hero-main-line2 {
-    display: inline;
+    display: block;
+    font-size: 0.85em;
 }
 
 .floating-text {
@@ -409,11 +450,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .hero-description {
-    font-size: 1.3rem;
+    font-size: 1.6rem;
     font-weight: 600;
     margin-top: 3rem;
     margin-bottom: 0;
     opacity: 0.98;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.4);
+    line-height: 1.4;
     line-height: 1.8;
     color: #fff;
     text-shadow: 0 3px 16px rgba(0,0,0,0.7), 0 1px 0 #222;
@@ -470,9 +513,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .hero-buttons .btn-primary {
-    background: linear-gradient(45deg, #2c5aa0, #4a7bc8, #2c5aa0);
+    background: linear-gradient(45deg, #7dd3fc, #bfdbfe, #7dd3fc);
     background-size: 300% 300%;
     animation: gradientShift 3s ease infinite;
+    box-shadow: 0 8px 20px rgba(125, 211, 252, 0.4);
 }
 
 .hero-buttons .btn-secondary {
@@ -1340,15 +1384,15 @@ h1, h2, h3, h4, h5, h6 {
     }
     
     .hero-title {
-        font-size: 2.5rem;
+        font-size: 3rem;
     }
     
     .hero-subtitle {
-        font-size: 1.4rem;
+        font-size: 1.8rem;
     }
     
     .hero-main {
-        font-size: 3.5rem;
+        font-size: 4.5rem;
     }
     
     .hero-main-line1,
@@ -1367,6 +1411,41 @@ h1, h2, h3, h4, h5, h6 {
     
     .hero-buttons .btn {
         width: 250px;
+    }
+    
+    .hero-content {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        text-align: center;
+    }
+    
+    .hero-text {
+        text-align: center;
+        order: 2;
+    }
+    
+    .hero-image {
+        order: 1;
+    }
+    
+    .hero-main-image {
+        max-width: 350px;
+    }
+    
+    /* 모바일에서 히어로 배경 수정 - 어르신 활동 이미지 6.jpg 사용 */
+    section.hero, .hero {
+        background-attachment: scroll !important; /* fixed 대신 scroll 사용 */
+        background-position: center center !important; /* 중앙 정렬 */
+        background-size: cover !important; /* 어르신 활동 이미지로 화면 채움 */
+        min-height: 100vh !important; /* 최소 높이 보장 */
+        background-repeat: no-repeat !important; /* 반복 방지 */
+    }
+    
+    /* 모바일에서 히어로 높이 및 위치 조정 */
+    .hero {
+        height: 100vh;
+        max-height: 100vh;
+        overflow: hidden; /* 넘치는 부분 숨김 */
     }
     
     .section-title {
@@ -1441,6 +1520,17 @@ h1, h2, h3, h4, h5, h6 {
 @media (max-width: 480px) {
     .container {
         padding: 0 15px;
+    }
+    
+    /* 작은 모바일에서 히어로 배경 최적화 - 어르신 활동 이미지 6.jpg 사용 */
+    section.hero, .hero {
+        background-attachment: scroll !important; /* 강제로 scroll 적용 */
+        background-position: center center !important; /* 중앙 정렬 강화 */
+        background-size: cover !important; /* 어르신 활동 이미지로 화면 채움 */
+        min-height: 100vh !important; /* 최소 높이 보장 강화 */
+        background-repeat: no-repeat !important; /* 반복 방지 강화 */
+        height: 100vh !important; /* 높이 고정 */
+        max-height: 100vh !important; /* 최대 높이 제한 */
     }
     
     .about-item,
@@ -1871,6 +1961,21 @@ html {
     100% { transform: rotate(360deg); }
 }
 
+@keyframes subtleFloat {
+    0%, 100% {
+        background-position: center, 20% 80%, 80% 20%, 50% 50%;
+    }
+    25% {
+        background-position: center, 22% 78%, 78% 22%, 52% 48%;
+    }
+    50% {
+        background-position: center, 25% 75%, 75% 25%, 55% 45%;
+    }
+    75% {
+        background-position: center, 22% 78%, 78% 22%, 52% 48%;
+    }
+}
+
 .blog-posts {
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
@@ -2113,3 +2218,168 @@ html {
     opacity: 1;
 }
 
+.naver-map {
+  height: 400px !important;
+  background-image: url('images/123456.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  margin: 0;
+  padding: 0;
+}
+
+/* 모바일 히어로 배경 강제 적용 - 최우선 */
+@media (max-width: 768px) {
+    #home.hero, section#home.hero, .hero#home, section.hero {
+        background-size: contain !important;
+        background-position: center center !important;
+        background-attachment: scroll !important;
+        background-repeat: no-repeat !important;
+    }
+}
+
+@media (max-width: 480px) {
+    #home.hero, section#home.hero, .hero#home, section.hero {
+        background-size: contain !important;
+        background-position: center center !important;
+        background-attachment: scroll !important;
+        background-repeat: no-repeat !important;
+    }
+}
+
+
+
+/* ============================================
+   Floating Consultation Button
+   ============================================ */
+
+.floating-consult-btns {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-end;
+}
+
+/* 카카오톡 상담 버튼 */
+.floating-kakao-btn {
+    display: block;
+    transition: all 0.3s ease;
+    animation: pulse-kakao 2s infinite;
+}
+
+.floating-kakao-btn img {
+    width: 140px;
+    height: auto;
+    display: block;
+    filter: drop-shadow(0 8px 25px rgba(254, 229, 0, 0.4));
+    transition: all 0.3s ease;
+}
+
+.floating-kakao-btn:hover img {
+    transform: translateY(-5px) scale(1.05);
+    filter: drop-shadow(0 12px 35px rgba(254, 229, 0, 0.6));
+}
+
+/* 전화 상담 버튼 */
+.floating-phone-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+    transition: all 0.3s ease;
+    animation: pulse-phone 2s infinite;
+}
+
+.floating-phone-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(16, 185, 129, 0.5);
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.floating-phone-btn i {
+    font-size: 20px;
+    animation: ring 1.5s ease-in-out infinite;
+}
+
+/* Animations */
+@keyframes pulse-kakao {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+@keyframes pulse-phone {
+    0%, 100% {
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+    }
+    50% {
+        box-shadow: 0 8px 35px rgba(16, 185, 129, 0.6);
+    }
+}
+
+@keyframes ring {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+    10%, 30% {
+        transform: rotate(-15deg);
+    }
+    20%, 40% {
+        transform: rotate(15deg);
+    }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .floating-consult-btns {
+        bottom: 20px;
+        right: 20px;
+        gap: 12px;
+    }
+
+    .floating-kakao-btn img {
+        width: 120px;
+    }
+
+    .floating-phone-btn {
+        padding: 14px 20px;
+        font-size: 15px;
+    }
+
+    .floating-phone-btn .btn-text {
+        display: inline;
+    }
+}
+
+@media (max-width: 480px) {
+    .floating-kakao-btn img {
+        width: 100px;
+    }
+
+    .floating-phone-btn .btn-text {
+        display: none;
+    }
+
+    .floating-phone-btn {
+        width: 55px;
+        height: 55px;
+        padding: 0;
+        justify-content: center;
+        border-radius: 50%;
+    }
+}

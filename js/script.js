@@ -764,3 +764,30 @@ document.addEventListener('DOMContentLoaded', () => {
     //     loadBlogPosts();
     // }, 1000);
 });
+
+// ============================================
+// Floating Consultation Button Functions
+// ============================================
+
+function callPhone() {
+    const phoneNumber = '063-471-3339';
+    
+    // 모바일 환경 감지
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+        // 모바일: 즉시 전화 걸기
+        window.location.href = 'tel:' + phoneNumber;
+    } else {
+        // PC: 전화번호 복사 & 알림
+        navigator.clipboard.writeText(phoneNumber).then(() => {
+            alert('📞 전화번호가 복사되었습니다\!\n\n' + phoneNumber + '\n\n전화 주시면 친절히 상담해드리겠습니다.');
+        }).catch(() => {
+            // 복사 실패 시 전화번호만 표시
+            alert('📞 상담 전화번호\n\n' + phoneNumber + '\n\n전화 주시면 친절히 상담해드리겠습니다.');
+        });
+    }
+}
+
+// toggleConsultMenu 함수 제거됨 - 카카오톡 공식 이미지 버튼으로 대체
+

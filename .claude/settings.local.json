@@ -13,7 +13,8 @@
       "WebFetch(domain:www.freepik.com)",
       "WebFetch(domain:hyoga.kr)",
       "mcp__playwright-mcp__browser_navigate",
-      "mcp__playwright-mcp__browser_take_screenshot"
+      "mcp__playwright-mcp__browser_take_screenshot",
+      "Bash(cmd.exe /c start index.html)"
     ],
     "deny": [],
     "ask": []

@@ -17,18 +17,18 @@ class BlogImageUpdater {
         this.service = new ImageDownloadService();
         this.blogUrls = [
             {
+                url: 'https://blog.naver.com/chungdam311/223928716039',
+                title: '청담재활 요리 체험 활동 시간',
+                targetFile: 'blog-post-1-auto.png'
+            },
+            {
                 url: 'https://blog.naver.com/chungdam311/223920577668',
                 title: '청담재활 2분기 생신 잔치',
-                targetFile: 'blog-post-1-auto.png'
+                targetFile: 'blog-post-2-auto.png'
             },
             {
                 url: 'https://blog.naver.com/chungdam311/223898944941', 
                 title: '청담재활 삼겹살 파티',
-                targetFile: 'blog-post-2-auto.png'
-            },
-            {
-                url: 'https://blog.naver.com/chungdam311/223865345360',
-                title: '청담재활주간보호센터 어버이날 행사',
                 targetFile: 'blog-post-3-auto.png'
             }
         ];
@@ -157,7 +157,7 @@ class BlogImageUpdater {
     }
 
     extractBlogId(url) {
-        const match = url.match(/\\/([0-9]+)$/);
+        const match = url.match(/\/([0-9]+)$/);
         return match ? match[1] : '';
     }
 
