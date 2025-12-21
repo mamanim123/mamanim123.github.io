@@ -83,6 +83,26 @@
 
     .addr{font-size:16px;font-weight:1000;text-decoration:underline;text-underline-offset:6px;word-break:break-all}
     .tip{font-size:12px;color:rgba(255,255,255,.70);margin-top:6px}
+    .qrWrap{
+      margin-top:14px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:8px;
+    }
+    .qrImg{
+      width:140px;
+      height:140px;
+      background:#fff;
+      padding:10px;
+      border-radius:16px;
+      box-shadow:0 10px 18px rgba(0,0,0,.18);
+    }
+    .qrTxt{
+      font-size:12px;
+      opacity:.85;
+    }
+
     
   </style>
 </head>
@@ -114,6 +134,11 @@
       <div class="hr"></div>
       <div class="addr">mamanim123.github.io</div>
       <div class="tip">※ 카톡에서는 카드 이미지로 보이고, 눌러서 들어오면 버튼이 동작합니다.</div>
+      <div class="qrWrap">
+        <img src="./qr.png" alt="QR" class="qrImg">
+        <div class="qrTxt">QR 스캔 후 바로 연결</div>
+      </div>
+
     </div>
   </div>
 </body>
