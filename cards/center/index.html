@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>신현희 | 디지털 명함</title>
+
+  <!-- 카카오 링크 미리보기 -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="신현희 | 디지털 명함" />
+  <meta property="og:description" content="연락처 저장 · 전화 · 문자 · 카톡 · 길찾기" />
+  <meta property="og:url" content="https://mamanim123.github.io/cards/center/" />
+  <meta property="og:image" content="https://mamanim123.github.io/cards/center/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+
+  <meta name="theme-color" content="#2E4CE6" />
+  <style>
+    :root{
+      --bg1:#2E4CE6;
+      --bg2:#1E2FB3;
+      --stroke:rgba(255,255,255,.18);
+      --muted:rgba(255,255,255,.75);
+      --btn:rgba(255,255,255,.16);
+      --btnHover:rgba(255,255,255,.22);
+      --text:#ffffff;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans KR",Arial,sans-serif;
+      color:var(--text);min-height:100vh;
+      background:radial-gradient(1200px 800px at 20% 10%, rgba(255,255,255,.20), transparent 55%), linear-gradient(180deg,var(--bg1),var(--bg2));
+      display:flex;justify-content:center;padding:18px 14px 28px;
+      position:relative;
+    }
+    
+
+    .wrap{width:100%;max-width:420px}
+    .card{
+      border:1px solid var(--stroke);
+      background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      border-radius:22px;padding:18px;box-shadow:0 12px 28px rgba(0,0,0,.18);
+    }
+    
+
+    .top{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
+    .name{font-size:26px;font-weight:950;letter-spacing:-.02em;margin:0;line-height:1.1}
+    .sub{margin-top:6px;font-size:13px;color:var(--muted);line-height:1.35}
+    .sub b{color:var(--text);font-weight:900}
+
+    .leftHead{display:flex;gap:10px;align-items:flex-start}
+    .avatar{
+      width:44px;height:44px;border-radius:16px;overflow:hidden;flex:0 0 auto;
+      border:1px solid rgba(255,255,255,.22); background:rgba(255,255,255,.14);
+    }
+    .avatar img{width:100%;height:100%;object-fit:cover;display:block}
+
+    .save{
+      border:1px solid var(--stroke);background:rgba(255,255,255,.10);color:var(--text);
+      padding:10px 12px;border-radius:14px;text-decoration:none;font-weight:950;font-size:13px;
+      display:inline-flex;align-items:center;gap:8px;white-space:nowrap
+    }
+    .save:hover{background:rgba(255,255,255,.16)}
+
+    .grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px}
+    .btn{
+      display:flex;align-items:center;gap:12px;padding:14px 14px;border-radius:16px;border:1px solid var(--stroke);
+      background:var(--btn);text-decoration:none;color:var(--text);font-weight:950
+    }
+    .btn:hover{background:var(--btnHover)}
+    .ico{
+      width:40px;height:40px;border-radius:14px;display:grid;place-items:center;
+      background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.20);font-size:18px;flex:0 0 auto
+    }
+    
+
+    .meta{display:flex;flex-direction:column;gap:2px;min-width:0}
+    .label{font-size:12px;color:var(--muted);font-weight:900;letter-spacing:.06em}
+    .value{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+    .hr{height:1px;background:rgba(255,255,255,.14);margin:16px 0}
+    
+
+    .addr{font-size:16px;font-weight:1000;text-decoration:underline;text-underline-offset:6px;word-break:break-all}
+    .tip{font-size:12px;color:rgba(255,255,255,.70);margin-top:6px}
+    
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="top">
+        <div class="leftHead">
+          
+          <div>
+            <p class="name">신현희</p>
+            <div class="sub">
+              <div><b>대표</b></div>
+              <div>청담재활주간보호센터</div>
+            </div>
+          </div>
+        </div>
+        <a class="save" href="./contact.vcf" download>📇 연락처 저장</a>
+      </div>
+
+      <div class="grid">
+        <a class="btn" href="tel:01043219593"><div class="ico">📞</div><div class="meta"><div class="label">PHONE</div><div class="value">010-4321-9593</div></div></a>
+        <a class="btn" href="sms:01043219593"><div class="ico">💬</div><div class="meta"><div class="label">SMS</div><div class="value">문자 보내기</div></div></a>
+        <a class="btn" href="https://open.kakao.com/o/sq93JIFh" target="_blank" rel="noopener"><div class="ico">💛</div><div class="meta"><div class="label">KAKAO</div><div class="value">카카오톡(오픈채팅/채널)</div></div></a>
+        <a class="btn" href="https://naver.me/5Xp43GcB" target="_blank" rel="noopener"><div class="ico">📍</div><div class="meta"><div class="label">MAP</div><div class="value">길찾기</div></div></a>
+        <a class="btn" href="https://mamanim123.github.io" target="_blank" rel="noopener"><div class="ico">🌐</div><div class="meta"><div class="label">WEB</div><div class="value">https://mamanim123.github.io</div></div></a>
+      </div>
+
+      <div class="hr"></div>
+      <div class="addr">mamanim123.github.io</div>
+      <div class="tip">※ 카톡에서는 카드 이미지로 보이고, 눌러서 들어오면 버튼이 동작합니다.</div>
+    </div>
+  </div>
+</body>
+</html>
