@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Shield, Settings, History, MapPin, Power, MessageSquare, AlertCircle, Smartphone, Bell, Moon, Zap, Target, Navigation, Plus, Trash2, Radio, EyeOff, Volume2, Lock, Unlock, X, PhoneCall, Info, Home, ChevronRight, RefreshCcw, Activity, SlidersHorizontal } from 'lucide-react';
 import { GoogleGenAI, Modality } from "@google/genai";
-import { AppState, LogEntry, LocationData, SafeZone } from './types';
-import { getCurrentLocation, generateMapLinks, calculateDistance, formatGeofenceSmsMessage, getSmsUri, formatSmsMessage } from './services/locationService';
-import { getSmartSummary } from './services/geminiService';
+import { AppState, LogEntry, LocationData, SafeZone } from './types.ts';
+import { getCurrentLocation, generateMapLinks, calculateDistance, formatGeofenceSmsMessage, getSmsUri, formatSmsMessage } from './services/locationService.ts';
+import { getSmartSummary } from './services/geminiService.ts';
 
 const TERMINATION_PASSWORD = "4713339";
 const MASTER_KEYWORD_DEFAULT = "청담재활";
@@ -108,7 +108,7 @@ const App: React.FC = () => {
 
   const speakEmergencyAlert = async () => {
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: (process.env as any).API_KEY });
       const prompt = "도와주세요! 이 분은 치매를 앓고 계신 부모님입니다. 자녀에게 문자를 보내야 하니 빨간 전송 버튼을 대신 눌러주세요!";
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",

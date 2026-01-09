@@ -1,5 +1,4 @@
-
-import { LocationData, MapLinks } from '../types';
+import { LocationData, MapLinks } from '../types.ts';
 
 export const getCurrentLocation = (): Promise<LocationData> => {
   return new Promise((resolve, reject) => {
