@@ -48,15 +48,6 @@ const App: React.FC = () => {
     }
   }, [state.lastResetDate]);
 
-  useEffect(() => {
-    const preventBack = () => {
-      window.history.pushState(null, "", window.location.href);
-    };
-    window.history.pushState(null, "", window.location.href);
-    window.addEventListener('popstate', preventBack);
-    return () => window.removeEventListener('popstate', preventBack);
-  }, []);
-
   const addLog = useCallback((type: LogEntry['type'], message: string, data?: any) => {
     const newLog: LogEntry = {
       id: Math.random().toString(36).substring(7),
@@ -108,21 +99,24 @@ const App: React.FC = () => {
 
   const speakEmergencyAlert = async () => {
     try {
-      const ai = new GoogleGenAI({ apiKey: (process.env as any).API_KEY });
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const prompt = "도와주세요! 이 분은 치매를 앓고 계신 부모님입니다. 자녀에게 문자를 보내야 하니 빨간 전송 버튼을 대신 눌러주세요!";
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
         contents: [{ parts: [{ text: prompt }] }],
         config: {
-          responseModalalities: [Modality.AUDIO],
+          responseModalities: [Modality.AUDIO],
           speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
         },
       });
       const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
       if (base64Audio) {
         const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-        const arrayBuffer = Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0)).buffer;
-        const dataInt16 = new Int16Array(arrayBuffer);
+        const binaryString = atob(base64Audio);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
+        const dataInt16 = new Int16Array(bytes.buffer);
         const buffer = audioCtx.createBuffer(1, dataInt16.length, 24000);
         const channelData = buffer.getChannelData(0);
         for (let i = 0; i < dataInt16.length; i++) channelData[i] = dataInt16[i] / 32768.0;
