@@ -1,7 +1,0 @@
-{
-  "name": "청담재활",
-  "description": "A safety PWA that monitors specific keywords to automatically share current location via Google, Naver, and Kakao maps.",
-  "requestFramePermissions": [
-    "geolocation"
-  ]
-}
