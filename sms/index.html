@@ -16,7 +16,7 @@
     <style>
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         .safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }
-        /* 텍스트 드래그 및 선택 방지 (부모님 실수 방지) */
+        /* 부모님 조작 실수 방지를 위한 선택 금지 */
         * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
         input { -webkit-user-select: auto; user-select: auto; }
     </style>
@@ -35,6 +35,8 @@
 </head>
 <body class="bg-gray-50 text-gray-900 overflow-x-hidden">
     <div id="root"></div>
+    <!-- 앱 실행 스크립트 -->
+    <script type="module" src="index.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
