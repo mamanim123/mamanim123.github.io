@@ -14,6 +14,9 @@ echo.
 REM 1단계: 센터소식 업데이트
 echo 🚀 1단계: 센터소식 업데이트 실행 중...
 node update-blog-efficient.js
+if errorlevel 2 (
+    exit /b 0
+)
 if errorlevel 1 (
     echo ❌ 센터소식 업데이트 실패!
     exit /b 1
@@ -72,6 +75,16 @@ if not errorlevel 1 (
     exit /b 0
 )
 
+echo.
+echo 새로운 센터소식이 생성되었습니다.
+choice /C YN /N /M "GitHub에 push하시겠습니까? [Y/N]: "
+if errorlevel 2 (
+    git reset >nul 2>&1
+    echo.
+    echo push하지 않았습니다. 생성된 파일은 로컬에 보존되었습니다.
+    exit /b 0
+)
+
 REM 4단계: commit
 echo 💾 4단계: 변경사항 commit 중...
 git commit -m "센터소식 자동 업데이트"
@@ -83,7 +96,7 @@ if errorlevel 1 (
 REM 5단계: 명시적으로 강제 push
 REM fetch 직후 만든 commit만 올리므로 원격의 기존 파일은 유지됩니다.
 echo 📤 5단계: GitHub에 강제 push 중...
-git push origin main --force
+git push origin main
 if errorlevel 1 (
     echo ❌ 강제 push 실패!
     echo 💡 GitHub 인증과 네트워크 상태를 확인해주세요.

@@ -22,6 +22,6 @@ if not "%result%"=="0" (
 )
 
 echo.
-echo 🎉 센터소식 업데이트와 GitHub 업로드가 모두 완료되었습니다!
+echo 🎉 센터소식 업데이트 작업이 완료되었습니다!
 pause
 exit /b 0
