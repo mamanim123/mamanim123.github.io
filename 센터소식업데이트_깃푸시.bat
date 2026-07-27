@@ -1,129 +1,97 @@
-@echo off
+﻿@echo off
 chcp 65001 >nul
+setlocal EnableExtensions EnableDelayedExpansion
+
 echo.
-echo 🎯 청담재활 센터소식 업데이트 + GitHub 업로드!
-echo ==========================================
+echo 🎯 청담재활 센터소식 업데이트 + GitHub 강제 업로드!
+echo ==================================================
 echo.
 
-REM 올바른 폴더로 이동
 cd /d "%~dp0"
-
-REM 현재 위치 확인
 echo 📁 현재 위치: %CD%
 echo.
 
 REM 1단계: 센터소식 업데이트
 echo 🚀 1단계: 센터소식 업데이트 실행 중...
 node update-blog-efficient.js
-
-if %errorlevel% neq 0 (
+if errorlevel 1 (
     echo ❌ 센터소식 업데이트 실패!
-    echo 💡 인터넷 연결을 확인해주세요
-    pause
     exit /b 1
 )
 echo ✅ 센터소식 업데이트 완료!
 echo.
 
-REM 2단계: GitHub 원격 저장소 확인/변경
-echo 🔧 2단계: GitHub 저장소 설정 확인 중...
-git remote get-url origin > temp_url.txt 2>nul
-if exist temp_url.txt (
-    for /f "delims=" %%i in (temp_url.txt) do set current_url=%%i
-    del temp_url.txt
-    echo 현재 저장소: !current_url!
-    
-    REM mamanim123.github.io가 아니면 변경
-    echo !current_url! | findstr "mamanim123.github.io" >nul
-    if !errorlevel! neq 0 (
-        echo 🔄 저장소를 mamanim123.github.io로 변경 중...
-        git remote set-url origin https://github.com/mamanim123/mamanim123.github.io.git
-        echo ✅ 저장소 변경 완료!
-    ) else (
-        echo ✅ 이미 올바른 저장소로 설정됨!
-    )
-) else (
-    echo 🔄 저장소 설정 중...
-    git remote add origin https://github.com/mamanim123/mamanim123.github.io.git
-)
-echo.
-
-REM 3단계: 필요한 파일만 선별해서 추가
-echo 📋 3단계: 필요한 파일만 선별 중...
-
-REM index.html 추가
-if exist "index.html" (
-    git add index.html
-    echo ✅ index.html 추가됨
-) else (
-    echo ❌ index.html을 찾을 수 없습니다!
+REM 2단계: 원격 최신 이력을 기준으로 작업 기준점 정리
+REM 원격에만 있는 22개 커밋을 삭제하지 않도록 먼저 origin/main을 기준으로 맞춥니다.
+echo 📥 2단계: GitHub 최신 이력 확인 중...
+git fetch origin main
+if errorlevel 1 (
+    echo ❌ GitHub 최신 이력 확인 실패!
+    exit /b 1
 )
 
-REM 새로운 블로그 이미지들만 추가 (223*-청담재활.png)
-echo 🖼️ 새로운 블로그 이미지 확인 중...
-for %%f in (images\223*-청담재활.png) do (
-    if exist "%%f" (
-        git add "%%f"
-        echo ✅ %%f 추가됨
-    )
+git reset --mixed origin/main
+if errorlevel 1 (
+    echo ❌ Git 기준점 정리 실패!
+    exit /b 1
 )
+echo ✅ 원격 최신 상태를 기준으로 준비 완료!
 echo.
 
-REM 4단계: 변경사항 확인
-echo 📊 4단계: 커밋할 파일 확인...
-git status --short
+REM 3단계: 업로드 대상만 staging
+REM thumbnails, node_modules, 백업 파일 등은 업로드하지 않습니다.
+echo 📋 3단계: 업로드 대상 파일 staging 중...
+
+git add -- index.html
+if errorlevel 1 (
+    echo ❌ index.html staging 실패!
+    exit /b 1
+)
+
+REM 네이버 게시물 ID 기반 이미지 전체를 확인합니다.
+REM 이미 원격에 있는 파일은 변경사항이 없으면 commit에 포함되지 않습니다.
+for /f "delims=" %%f in ('dir /b "images\*-청담재활.png" 2^>nul') do (
+    git add -- "images\%%f"
+)
+
+REM 이 자동화 파일의 수정 내용도 함께 배포합니다.
+git add -- "센터소식업데이트.bat" "센터소식업데이트_깃푸시.bat"
+if errorlevel 1 (
+    echo ❌ 배치 파일 staging 실패!
+    exit /b 1
+)
+
+echo.
+echo 📊 실제 commit 예정 파일:
+git status --short --untracked-files=no
 echo.
 
-REM 변경사항이 있는지 확인
 git diff --cached --quiet
-if %errorlevel% equ 0 (
-    echo ℹ️ 커밋할 변경사항이 없습니다
-    echo 💡 새로운 센터소식이 없거나 이미 최신 상태입니다
-    pause
+if not errorlevel 1 (
+    echo ℹ️ 새로 commit할 변경사항이 없습니다.
     exit /b 0
 )
 
-REM 5단계: 커밋 및 푸시
-echo 📤 5단계: GitHub에 업로드 중...
-
-REM 현재 날짜와 시간 생성
-for /f "tokens=2 delims==" %%a in ('wmic OS Get localdatetime /value') do set "dt=%%a"
-set "YY=%dt:~2,2%" & set "YYYY=%dt:~0,4%" & set "MM=%dt:~4,2%" & set "DD=%dt:~6,2%"
-set "HH=%dt:~8,2%" & set "Min=%dt:~10,2%"
-set "timestamp=%YYYY%-%MM%-%DD% %HH%:%Min%"
-
-git commit -m "센터소식 업데이트 - %timestamp%"
-if %errorlevel% neq 0 (
-    echo ❌ 커밋 실패!
-    pause
+REM 4단계: commit
+echo 💾 4단계: 변경사항 commit 중...
+git commit -m "센터소식 자동 업데이트"
+if errorlevel 1 (
+    echo ❌ commit 실패!
     exit /b 1
 )
 
-git push origin main
-if %errorlevel% neq 0 (
-    echo ❌ 푸시 실패!
-    echo 💡 GitHub 로그인 상태를 확인해주세요
-    pause
+REM 5단계: 명시적으로 강제 push
+REM fetch 직후 만든 commit만 올리므로 원격의 기존 파일은 유지됩니다.
+echo 📤 5단계: GitHub에 강제 push 중...
+git push origin main --force
+if errorlevel 1 (
+    echo ❌ 강제 push 실패!
+    echo 💡 GitHub 인증과 네트워크 상태를 확인해주세요.
     exit /b 1
 )
 
+echo.
 echo ✅ GitHub 업로드 완료!
+echo 🌐 https://mamanim123.github.io
 echo.
-
-REM 완료 메시지
-echo 🎉 모든 작업 완료!
-echo ==========================================
-echo 📋 업로드된 파일:
-echo    ✅ index.html (센터소식 업데이트)
-for %%f in (images\223*-청담재활.png) do (
-    if exist "%%f" echo    ✅ %%f
-)
-echo.
-echo 🌐 결과 확인:
-echo    - 웹사이트: https://mamanim123.github.io
-echo    - GitHub: https://github.com/mamanim123/mamanim123.github.io
-echo    - 업데이트 시간: %timestamp%
-echo.
-
-echo 💻 아무 키나 누르면 종료됩니다...
-pause >nul
+exit /b 0
