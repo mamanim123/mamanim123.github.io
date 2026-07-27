@@ -93,12 +93,11 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM 5단계: 명시적으로 강제 push
-REM fetch 직후 만든 commit만 올리므로 원격의 기존 파일은 유지됩니다.
-echo 📤 5단계: GitHub에 강제 push 중...
+REM 5단계: 사용자가 승인한 경우에만 push
+echo 📤 5단계: GitHub에 push 중...
 git push origin main
 if errorlevel 1 (
-    echo ❌ 강제 push 실패!
+    echo ❌ GitHub push 실패!
     echo 💡 GitHub 인증과 네트워크 상태를 확인해주세요.
     exit /b 1
 )
