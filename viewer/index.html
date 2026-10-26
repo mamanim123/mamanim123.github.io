@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#4f46e5">
@@ -80,8 +80,8 @@
   <style>
     /* Custom Scrollbar */
     ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
     }
     ::-webkit-scrollbar-track {
       background: #f1f5f9;
@@ -92,6 +92,15 @@
     }
     ::-webkit-scrollbar-thumb:hover {
       background: #94a3b8;
+    }
+
+    /* Hide scrollbar utility */
+    .scrollbar-none::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-none {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
     }
 
     /* Editable focus */
@@ -117,79 +126,80 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col antialiased select-none">
 
-  <!-- TOP APP BAR -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm no-print">
-    <div class="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
+  <!-- TOP APP BAR (Fully Mobile Responsive) -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs no-print">
+    <div class="max-w-7xl mx-auto px-2.5 sm:px-6 h-13 sm:h-16 flex items-center justify-between">
       <!-- Logo & File Name -->
-      <div class="flex items-center space-x-2 sm:space-x-3 overflow-hidden">
-        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center text-white shadow-md flex-shrink-0">
-          <i data-lucide="layers" class="w-5 h-5"></i>
+      <div class="flex items-center space-x-2 sm:space-x-3 min-w-0 mr-2 overflow-hidden">
+        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center text-white shadow-xs flex-shrink-0">
+          <i data-lucide="layers" class="w-4 h-4 sm:w-5 sm:h-5"></i>
         </div>
-        <div class="flex flex-col min-w-0">
-          <div class="flex items-center space-x-2">
-            <span class="font-bold text-sm sm:text-base tracking-tight truncate" id="app-title">마마 오피스 뷰어</span>
-            <span id="file-badge" class="hidden px-2 py-0.5 text-xs font-semibold rounded-full uppercase tracking-wider"></span>
+        <div class="flex flex-col min-w-0 truncate">
+          <div class="flex items-center space-x-1.5 truncate">
+            <span class="font-bold text-xs sm:text-base tracking-tight truncate" id="app-title">마마 오피스</span>
+            <span id="file-badge" class="hidden px-1.5 py-0.5 text-[10px] sm:text-xs font-semibold rounded-full uppercase tracking-wider flex-shrink-0"></span>
           </div>
-          <p id="file-name" class="text-xs text-slate-500 truncate hidden">파일이 선택되지 않음</p>
+          <p id="file-name" class="text-[11px] sm:text-xs text-slate-500 truncate hidden">파일이 선택되지 않음</p>
         </div>
       </div>
 
-      <!-- Action Buttons -->
-      <div class="flex items-center space-x-1.5 sm:space-x-2">
+      <!-- Action Buttons (Responsive on Mobile) -->
+      <div class="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
         <!-- Open File Input -->
-        <label for="file-input" class="cursor-pointer inline-flex items-center px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-medium transition active:scale-95">
-          <i data-lucide="folder-open" class="w-4 h-4 mr-1.5 text-slate-600"></i>
-          <span>파일 열기</span>
+        <label for="file-input" class="cursor-pointer inline-flex items-center px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-medium transition active:scale-95 shadow-xs" title="파일 열기">
+          <i data-lucide="folder-open" class="w-4 h-4 sm:mr-1.5 text-slate-600"></i>
+          <span class="hidden sm:inline">파일 열기</span>
+          <span class="sm:hidden text-xs">열기</span>
         </label>
         <input type="file" id="file-input" class="hidden" accept=".xlsx,.xls,.csv,.hwpx,.hwp,.pdf" />
 
         <!-- Edit Mode Toggle -->
-        <button id="btn-toggle-edit" class="hidden inline-flex items-center px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-medium transition active:scale-95 shadow-xs">
-          <i data-lucide="edit-3" class="w-4 h-4 mr-1.5 text-slate-600" id="icon-edit"></i>
-          <span id="txt-edit-mode">편집 모드</span>
+        <button id="btn-toggle-edit" class="hidden inline-flex items-center px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-medium transition active:scale-95 shadow-xs" title="편집 모드">
+          <i data-lucide="edit-3" class="w-4 h-4 sm:mr-1.5 text-slate-600" id="icon-edit"></i>
+          <span id="txt-edit-mode" class="text-xs sm:text-sm">편집</span>
         </button>
 
         <!-- Save / Download Button -->
-        <button id="btn-download" class="hidden inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-xs sm:text-sm font-medium shadow-sm transition active:scale-95">
-          <i data-lucide="download" class="w-4 h-4 mr-1.5"></i>
-          <span>저장</span>
+        <button id="btn-download" class="hidden inline-flex items-center px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-xs sm:text-sm font-medium shadow-xs transition active:scale-95" title="저장 및 내보내기">
+          <i data-lucide="download" class="w-4 h-4 sm:mr-1.5"></i>
+          <span class="hidden sm:inline">저장</span>
         </button>
 
         <!-- Close Button -->
         <button id="btn-close" class="hidden p-1.5 sm:p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition" title="문서 닫기">
-          <i data-lucide="x" class="w-5 h-5"></i>
+          <i data-lucide="x" class="w-4 h-4 sm:w-5 sm:h-5"></i>
         </button>
       </div>
     </div>
   </header>
 
   <!-- MAIN CONTAINER -->
-  <main class="flex-1 flex flex-col max-w-7xl w-full mx-auto p-2 sm:p-4 md:p-6 overflow-hidden">
+  <main class="flex-1 flex flex-col max-w-7xl w-full mx-auto p-1.5 sm:p-4 md:p-6 overflow-hidden">
 
     <!-- 1. EMPTY / WELCOME STATE -->
-    <div id="welcome-view" class="flex-1 flex flex-col items-center justify-center p-4">
-      <div class="max-w-md w-full bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 sm:p-8 text-center">
+    <div id="welcome-view" class="flex-1 flex flex-col items-center justify-center p-3 sm:p-4">
+      <div class="max-w-md w-full bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-8 text-center">
         <!-- Icon -->
-        <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-brand-600 mb-5 shadow-inner">
-          <i data-lucide="file-spreadsheet" class="w-8 h-8 sm:w-10 sm:h-10"></i>
+        <div class="w-14 h-14 sm:w-20 sm:h-20 mx-auto rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-brand-600 mb-4 sm:mb-5 shadow-inner">
+          <i data-lucide="file-spreadsheet" class="w-7 h-7 sm:w-10 sm:h-10"></i>
         </div>
 
-        <h2 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">마마 오피스 뷰어</h2>
-        <p class="text-xs sm:text-sm text-slate-500 mb-6 leading-relaxed">
+        <h2 class="text-base sm:text-xl font-bold text-slate-900 mb-2">마마 오피스 뷰어</h2>
+        <p class="text-xs sm:text-sm text-slate-500 mb-5 sm:mb-6 leading-relaxed">
           스마트폰과 PC에서 무거운 광고 없이 <br class="hidden sm:inline">
           <b class="text-emerald-700">엑셀 (.xlsx)</b>, <b class="text-blue-700">한글 (.hwpx)</b>, <b class="text-pink-700">구형 한글 (.hwp)</b>, <b class="text-rose-700">PDF (.pdf)</b>를<br class="hidden sm:inline">
           빠르고 안전하게 열람 및 편리하게 편집하세요.
         </p>
 
         <!-- Drag & Drop Zone -->
-        <div id="drop-zone" class="border-2 border-dashed border-slate-300 hover:border-brand-500 rounded-xl p-6 sm:p-8 bg-slate-50/50 hover:bg-brand-50/30 transition cursor-pointer mb-5">
-          <i data-lucide="upload-cloud" class="w-8 h-8 mx-auto text-slate-400 mb-2"></i>
-          <p class="text-xs sm:text-sm font-semibold text-slate-700">여기를 클릭하거나 파일을 끌어다 놓으세요</p>
+        <div id="drop-zone" class="border-2 border-dashed border-slate-300 hover:border-brand-500 rounded-xl p-5 sm:p-8 bg-slate-50/50 hover:bg-brand-50/30 transition cursor-pointer mb-4 sm:mb-5">
+          <i data-lucide="upload-cloud" class="w-7 h-7 sm:w-8 sm:h-8 mx-auto text-slate-400 mb-2"></i>
+          <p class="text-xs sm:text-sm font-semibold text-slate-700">여기를 클릭하거나 파일을 선택하세요</p>
           <p class="text-[11px] text-slate-400 mt-1">지원 형식: .xlsx, .xls, .csv, .hwpx, .hwp, .pdf</p>
         </div>
 
         <!-- Quick Test Buttons -->
-        <div class="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-center gap-2">
+        <div class="pt-3 sm:pt-4 border-t border-slate-100 flex flex-wrap items-center justify-center gap-2">
           <span class="text-xs text-slate-400 w-full text-center">빠른 테스트:</span>
           <button id="btn-sample-excel" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs font-medium transition flex items-center">
             <i data-lucide="table" class="w-3.5 h-3.5 mr-1"></i> 샘플 엑셀
@@ -200,8 +210,8 @@
         </div>
 
         <!-- Privacy Notice -->
-        <div class="mt-5 text-[11px] text-slate-400 flex items-center justify-center space-x-1">
-          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-500"></i>
+        <div class="mt-4 sm:mt-5 text-[11px] text-slate-400 flex items-center justify-center space-x-1">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-500 flex-shrink-0"></i>
           <span>파일은 외부 서버로 전송되지 않고 기기 내부에서 100% 안전하게 처리됩니다.</span>
         </div>
       </div>
@@ -210,37 +220,37 @@
     <!-- 2. EXCEL VIEWER & EDITOR -->
     <div id="excel-view" class="hidden flex-1 flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <!-- Excel Sub Header -->
-      <div class="bg-slate-50 border-b border-slate-200 px-3 py-2 flex flex-wrap items-center justify-between gap-2 no-print">
-        <div id="excel-tabs" class="flex items-center space-x-1 overflow-x-auto max-w-full pb-1 sm:pb-0"></div>
-        <div id="excel-tools" class="flex items-center space-x-1">
-          <button id="btn-add-row" class="px-2.5 py-1 text-xs font-medium rounded bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition flex items-center shadow-xs" title="현재 행 아래에 새 행 삽입">
-            <i data-lucide="plus" class="w-3.5 h-3.5 mr-1 text-emerald-600"></i> 행 추가
+      <div class="bg-slate-50 border-b border-slate-200 px-2 sm:px-3 py-1.5 sm:py-2 flex items-center justify-between gap-1 sm:gap-2 no-print overflow-x-auto scrollbar-none">
+        <div id="excel-tabs" class="flex items-center space-x-1 overflow-x-auto scrollbar-none max-w-full pb-0.5 flex-shrink-0"></div>
+        <div id="excel-tools" class="flex items-center space-x-1 flex-shrink-0">
+          <button id="btn-add-row" class="px-2 sm:px-2.5 py-1 text-xs font-medium rounded bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition flex items-center shadow-xs" title="현재 행 아래에 새 행 삽입">
+            <i data-lucide="plus" class="w-3.5 h-3.5 sm:mr-1 text-emerald-600"></i> <span class="hidden sm:inline">행 추가</span><span class="sm:hidden text-[11px]">+행</span>
           </button>
-          <button id="btn-del-row" class="px-2.5 py-1 text-xs font-medium rounded bg-white hover:bg-rose-50 text-rose-700 border border-slate-200 transition flex items-center shadow-xs" title="선택된 행 삭제">
-            <i data-lucide="trash-2" class="w-3.5 h-3.5 mr-1 text-rose-500"></i> 행 삭제
+          <button id="btn-del-row" class="px-2 sm:px-2.5 py-1 text-xs font-medium rounded bg-white hover:bg-rose-50 text-rose-700 border border-slate-200 transition flex items-center shadow-xs" title="선택된 행 삭제">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5 sm:mr-1 text-rose-500"></i> <span class="hidden sm:inline">행 삭제</span><span class="sm:hidden text-[11px]">-행</span>
           </button>
-          <button id="btn-add-col" class="px-2.5 py-1 text-xs font-medium rounded bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition flex items-center shadow-xs" title="오른쪽에 새 열 추가">
-            <i data-lucide="plus" class="w-3.5 h-3.5 mr-1 text-blue-600"></i> 열 추가
+          <button id="btn-add-col" class="px-2 sm:px-2.5 py-1 text-xs font-medium rounded bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition flex items-center shadow-xs" title="오른쪽에 새 열 추가">
+            <i data-lucide="plus" class="w-3.5 h-3.5 sm:mr-1 text-blue-600"></i> <span class="hidden sm:inline">열 추가</span><span class="sm:hidden text-[11px]">+열</span>
           </button>
-          <button id="btn-del-col" class="px-2.5 py-1 text-xs font-medium rounded bg-white hover:bg-rose-50 text-rose-700 border border-slate-200 transition flex items-center shadow-xs" title="선택된 열 삭제">
-            <i data-lucide="trash-2" class="w-3.5 h-3.5 mr-1 text-rose-500"></i> 열 삭제
+          <button id="btn-del-col" class="px-2 sm:px-2.5 py-1 text-xs font-medium rounded bg-white hover:bg-rose-50 text-rose-700 border border-slate-200 transition flex items-center shadow-xs" title="선택된 열 삭제">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5 sm:mr-1 text-rose-500"></i> <span class="hidden sm:inline">열 삭제</span><span class="sm:hidden text-[11px]">-열</span>
           </button>
-          <span class="text-xs text-slate-400 ml-2 font-mono" id="excel-stats">0 행 × 0 열</span>
+          <span class="text-[11px] sm:text-xs text-slate-400 ml-1 sm:ml-2 font-mono whitespace-nowrap" id="excel-stats">0×0</span>
         </div>
       </div>
 
       <!-- Excel Formula & Quick Tool Bar -->
-      <div id="excel-formula-bar" class="bg-white border-b border-slate-200 px-3 py-1.5 flex items-center space-x-2 text-xs no-print">
-        <div class="px-2.5 py-1 bg-slate-100 border border-slate-300 rounded font-mono font-bold text-slate-700 min-w-[54px] text-center" id="excel-coord-badge">A1</div>
-        <span class="text-slate-400 font-serif italic text-sm font-semibold select-none">fx</span>
-        <input type="text" id="excel-formula-input" class="flex-1 px-3 py-1 text-xs border border-slate-200 rounded-lg focus:border-brand-500 focus:outline-none bg-slate-50 focus:bg-white text-slate-800 transition" placeholder="수식 또는 셀 내용을 입력하세요..." />
-        <button id="btn-comma-fmt" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg border border-slate-300 font-medium transition" title="숫자 1,000 단위 콤마 서식 적용">
+      <div id="excel-formula-bar" class="bg-white border-b border-slate-200 px-2 sm:px-3 py-1 sm:py-1.5 flex items-center space-x-1.5 text-xs no-print overflow-x-auto scrollbar-none">
+        <div class="px-2 py-0.5 bg-slate-100 border border-slate-300 rounded font-mono font-bold text-slate-700 text-[11px] sm:text-xs min-w-[46px] text-center flex-shrink-0" id="excel-coord-badge">A1</div>
+        <span class="text-slate-400 font-serif italic text-xs sm:text-sm font-semibold select-none flex-shrink-0">fx</span>
+        <input type="text" id="excel-formula-input" class="flex-1 min-w-[120px] px-2.5 py-1 text-xs border border-slate-200 rounded-lg focus:border-brand-500 focus:outline-none bg-slate-50 focus:bg-white text-slate-800 transition" placeholder="수식 또는 셀 내용..." />
+        <button id="btn-comma-fmt" class="px-2 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg border border-slate-300 font-medium transition flex-shrink-0" title="숫자 1,000 단위 콤마 서식 적용">
           ,000
         </button>
         <!-- Excel Quick Fill Dropdown -->
-        <div class="relative">
-          <button id="btn-excel-quick-fill" class="px-2.5 py-1 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg border border-emerald-200 flex items-center font-medium transition">
-            <i data-lucide="zap" class="w-3.5 h-3.5 mr-1 text-emerald-600"></i> <span>빠른입력</span>
+        <div class="relative flex-shrink-0">
+          <button id="btn-excel-quick-fill" class="px-2 py-1 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg border border-emerald-200 flex items-center font-medium transition">
+            <i data-lucide="zap" class="w-3.5 h-3.5 sm:mr-1 text-emerald-600"></i> <span class="hidden sm:inline">빠른입력</span>
           </button>
           <div id="excel-quick-menu" class="hidden absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 text-xs">
             <button class="w-full text-left px-3 py-1.5 hover:bg-slate-100 text-slate-700 qf-btn flex items-center" data-val="DATE">📅 오늘 날짜</button>
@@ -254,7 +264,7 @@
       </div>
 
       <!-- Excel Table Container -->
-      <div class="flex-1 overflow-auto bg-slate-100/50 p-2 sm:p-4" id="excel-scroll-area">
+      <div class="flex-1 overflow-auto bg-slate-100/50 p-1 sm:p-4" id="excel-scroll-area">
         <div class="inline-block min-w-full bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
           <table id="excel-table" class="border-collapse text-left w-full text-xs sm:text-sm"></table>
         </div>
@@ -264,25 +274,25 @@
     <!-- 3. DOCUMENT (HWPX / HWP) VIEWER & EDITOR -->
     <div id="doc-view" class="hidden flex-1 flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <!-- Document Sub Toolbar -->
-      <div class="bg-slate-50 border-b border-slate-200 px-3 py-2 flex items-center justify-between text-xs text-slate-600 no-print">
-        <div class="flex items-center space-x-2">
-          <span class="font-semibold text-slate-700 flex items-center" id="doc-title-badge">
-            <i data-lucide="file-text" class="w-4 h-4 mr-1 text-blue-600"></i> 문서 본문
+      <div class="bg-slate-50 border-b border-slate-200 px-2 sm:px-3 py-1.5 sm:py-2 flex items-center justify-between text-xs text-slate-600 no-print">
+        <div class="flex items-center space-x-1.5 min-w-0 truncate">
+          <span class="font-semibold text-slate-700 flex items-center truncate" id="doc-title-badge">
+            <i data-lucide="file-text" class="w-4 h-4 mr-1 text-blue-600 flex-shrink-0"></i> <span class="truncate">문서 본문</span>
           </span>
-          <span id="doc-status" class="text-slate-400 text-[11px] font-medium">(읽기 모드)</span>
+          <span id="doc-status" class="text-slate-400 text-[11px] font-medium flex-shrink-0">(읽기)</span>
         </div>
-        <div class="flex items-center space-x-2">
-          <button id="btn-zoom-out" class="p-1 rounded hover:bg-slate-200" title="축소"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
-          <span id="txt-zoom" class="text-xs text-slate-500 font-mono w-10 text-center">100%</span>
-          <button id="btn-zoom-in" class="p-1 rounded hover:bg-slate-200" title="확대"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
-          <button onclick="window.print()" class="p-1 rounded hover:bg-slate-200" title="인쇄"><i data-lucide="printer" class="w-4 h-4"></i></button>
+        <div class="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+          <button id="btn-zoom-out" class="p-1 rounded hover:bg-slate-200" title="축소"><i data-lucide="zoom-out" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i></button>
+          <span id="txt-zoom" class="text-xs text-slate-500 font-mono w-8 sm:w-10 text-center">100%</span>
+          <button id="btn-zoom-in" class="p-1 rounded hover:bg-slate-200" title="확대"><i data-lucide="zoom-in" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i></button>
+          <button onclick="window.print()" class="p-1 rounded hover:bg-slate-200" title="인쇄"><i data-lucide="printer" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i></button>
         </div>
       </div>
 
-      <!-- Document Rich Editor Toolbar (Active when isEditMode = true) -->
-      <div id="doc-editor-toolbar" class="hidden bg-white border-b border-indigo-100 px-3 py-2 flex flex-wrap items-center justify-between gap-2 shadow-xs z-20 no-print">
-        <!-- Left: Text Formatting & Table Controls -->
-        <div class="flex items-center flex-wrap gap-1">
+      <!-- Document Rich Editor Toolbar (Mobile Swipeable Single Bar) -->
+      <div id="doc-editor-toolbar" class="hidden bg-white border-b border-indigo-100 px-2 sm:px-3 py-1.5 sm:py-2 flex items-center overflow-x-auto whitespace-nowrap scrollbar-none gap-1 sm:gap-2 shadow-xs z-20 no-print">
+        <!-- Text Formatting & Table Controls -->
+        <div class="flex items-center flex-shrink-0 space-x-0.5 sm:space-x-1">
           <button id="btn-doc-undo" class="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition" title="실행 취소 (Ctrl+Z)"><i data-lucide="undo" class="w-4 h-4"></i></button>
           <button id="btn-doc-redo" class="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition" title="다시 실행 (Ctrl+Y)"><i data-lucide="redo" class="w-4 h-4"></i></button>
           
@@ -301,22 +311,23 @@
           <div class="w-px h-4 bg-slate-300 mx-1"></div>
 
           <!-- Table Controls -->
-          <button id="btn-doc-add-row" class="px-2.5 py-1 text-xs bg-indigo-50 hover:bg-indigo-100 text-brand-700 font-semibold rounded-lg flex items-center border border-indigo-200 transition" title="현재 표의 선택 행 아래에 새 행 삽입">
-            <i data-lucide="plus-circle" class="w-3.5 h-3.5 mr-1 text-brand-600"></i> 표 행 추가
+          <button id="btn-doc-add-row" class="px-2 py-1 text-xs bg-indigo-50 hover:bg-indigo-100 text-brand-700 font-semibold rounded-lg flex items-center border border-indigo-200 transition" title="현재 표의 선택 행 아래에 새 행 삽입">
+            <i data-lucide="plus-circle" class="w-3.5 h-3.5 mr-1 text-brand-600"></i> <span class="hidden sm:inline">표 </span>행 추가
           </button>
-          <button id="btn-doc-del-row" class="px-2.5 py-1 text-xs bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold rounded-lg flex items-center border border-rose-200 transition" title="선택된 표 행 삭제">
+          <button id="btn-doc-del-row" class="px-2 py-1 text-xs bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold rounded-lg flex items-center border border-rose-200 transition" title="선택된 표 행 삭제">
             <i data-lucide="trash-2" class="w-3.5 h-3.5 mr-1 text-rose-500"></i> 행 삭제
           </button>
         </div>
 
-        <!-- Right: Quick Fill & Search -->
-        <div class="flex items-center space-x-2">
-          <!-- Quick Fill Dropdown -->
+        <div class="w-px h-4 bg-slate-300 mx-1 flex-shrink-0"></div>
+
+        <!-- Quick Fill & Search -->
+        <div class="flex items-center space-x-1.5 flex-shrink-0">
           <div class="relative">
-            <button id="btn-doc-quick-fill" class="px-2.5 py-1 text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 font-medium rounded-lg flex items-center border border-amber-200 transition">
+            <button id="btn-doc-quick-fill" class="px-2 py-1 text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 font-medium rounded-lg flex items-center border border-amber-200 transition">
               <i data-lucide="zap" class="w-3.5 h-3.5 mr-1 text-amber-600"></i> 빠른 문구
             </button>
-            <div id="doc-quick-menu" class="hidden absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 text-xs">
+            <div id="doc-quick-menu" class="hidden absolute left-0 sm:right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 text-xs">
               <button class="w-full text-left px-3 py-1.5 hover:bg-slate-100 text-slate-700 doc-qf-btn flex items-center" data-val="DATE">📅 오늘 날짜</button>
               <button class="w-full text-left px-3 py-1.5 hover:bg-slate-100 text-slate-700 doc-qf-btn flex items-center" data-val="상태양호">✅ 상태양호</button>
               <button class="w-full text-left px-3 py-1.5 hover:bg-slate-100 text-slate-700 doc-qf-btn flex items-center" data-val="정상">✅ 정상</button>
@@ -328,17 +339,17 @@
           </div>
 
           <!-- Document Search Box -->
-          <div class="flex items-center bg-slate-100 rounded-lg px-2.5 py-1 border border-slate-200 focus-within:border-brand-500 focus-within:bg-white transition">
-            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 mr-1.5"></i>
-            <input type="text" id="input-doc-search" placeholder="단어 찾기..." class="bg-transparent text-xs text-slate-700 outline-none w-24 sm:w-32 py-0.5" />
+          <div class="flex items-center bg-slate-100 rounded-lg px-2 py-0.5 border border-slate-200 focus-within:border-brand-500 focus-within:bg-white transition">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 mr-1"></i>
+            <input type="text" id="input-doc-search" placeholder="단어 찾기..." class="bg-transparent text-xs text-slate-700 outline-none w-20 sm:w-28 py-0.5" />
             <button id="btn-doc-search-next" class="text-slate-400 hover:text-slate-700 p-0.5 rounded transition" title="다음 찾기"><i data-lucide="chevron-down" class="w-3.5 h-3.5"></i></button>
           </div>
         </div>
       </div>
 
-      <!-- Document Page Viewport -->
-      <div class="flex-1 overflow-auto bg-slate-200/70 p-2 sm:p-6 flex justify-center" id="doc-scroll-area">
-        <div id="doc-page" class="w-full max-w-4xl min-h-[900px] bg-white rounded shadow-md border border-slate-300 p-6 sm:p-14 text-slate-900 leading-relaxed transition-all origin-top">
+      <!-- Document Page Viewport (Mobile Compact Padding) -->
+      <div class="flex-1 overflow-auto bg-slate-200/70 p-1 sm:p-4 md:p-6 flex justify-center" id="doc-scroll-area">
+        <div id="doc-page" class="w-full max-w-4xl min-h-[800px] bg-white rounded shadow-md border border-slate-300 p-3 sm:p-10 md:p-14 text-slate-900 leading-relaxed transition-all origin-top">
           <!-- Dynamic Parsed Document Content -->
           <div id="doc-content" class="outline-none space-y-2"></div>
         </div>
@@ -348,26 +359,26 @@
     <!-- 4. PDF VIEWER -->
     <div id="pdf-view" class="hidden flex-1 flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <!-- PDF Sub Toolbar -->
-      <div class="bg-slate-50 border-b border-slate-200 px-3 py-2 flex items-center justify-between text-xs text-slate-600 no-print">
-        <div class="flex items-center space-x-2">
-          <span class="font-semibold text-slate-700 flex items-center" id="pdf-title-badge">
-            <i data-lucide="file" class="w-4 h-4 mr-1 text-rose-600"></i> PDF 문서 본문
+      <div class="bg-slate-50 border-b border-slate-200 px-2 sm:px-3 py-1.5 sm:py-2 flex items-center justify-between text-xs text-slate-600 no-print">
+        <div class="flex items-center space-x-1.5 min-w-0 truncate">
+          <span class="font-semibold text-slate-700 flex items-center truncate" id="pdf-title-badge">
+            <i data-lucide="file" class="w-4 h-4 mr-1 text-rose-600 flex-shrink-0"></i> <span class="truncate">PDF 본문</span>
           </span>
-          <span id="txt-pdf-page-info" class="text-slate-600 font-mono text-[11px] bg-slate-200/80 px-2 py-0.5 rounded font-medium">0 / 0 페이지</span>
+          <span id="txt-pdf-page-info" class="text-slate-600 font-mono text-[10px] sm:text-[11px] bg-slate-200/80 px-1.5 py-0.5 rounded font-medium flex-shrink-0">0/0P</span>
         </div>
-        <div class="flex items-center space-x-1.5 sm:space-x-2">
-          <button id="btn-pdf-prev" class="p-1.5 rounded-lg hover:bg-slate-200 text-slate-700 transition" title="이전 페이지"><i data-lucide="chevron-up" class="w-4 h-4"></i></button>
-          <button id="btn-pdf-next" class="p-1.5 rounded-lg hover:bg-slate-200 text-slate-700 transition" title="다음 페이지"><i data-lucide="chevron-down" class="w-4 h-4"></i></button>
-          <div class="w-px h-4 bg-slate-300 mx-1"></div>
-          <button id="btn-pdf-zoom-out" class="p-1 rounded-lg hover:bg-slate-200 text-slate-700 transition" title="축소"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
-          <span id="txt-pdf-zoom" class="text-xs text-slate-600 font-mono w-10 text-center font-medium">120%</span>
-          <button id="btn-pdf-zoom-in" class="p-1 rounded-lg hover:bg-slate-200 text-slate-700 transition" title="확대"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
-          <button onclick="window.print()" class="p-1 rounded-lg hover:bg-slate-200 text-slate-700 transition" title="인쇄"><i data-lucide="printer" class="w-4 h-4"></i></button>
+        <div class="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+          <button id="btn-pdf-prev" class="p-1 sm:p-1.5 rounded-lg hover:bg-slate-200 text-slate-700 transition" title="이전 페이지"><i data-lucide="chevron-up" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i></button>
+          <button id="btn-pdf-next" class="p-1 sm:p-1.5 rounded-lg hover:bg-slate-200 text-slate-700 transition" title="다음 페이지"><i data-lucide="chevron-down" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i></button>
+          <div class="w-px h-4 bg-slate-300 mx-0.5 sm:mx-1"></div>
+          <button id="btn-pdf-zoom-out" class="p-1 rounded-lg hover:bg-slate-200 text-slate-700 transition" title="축소"><i data-lucide="zoom-out" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i></button>
+          <span id="txt-pdf-zoom" class="text-xs text-slate-600 font-mono w-8 sm:w-10 text-center font-medium">120%</span>
+          <button id="btn-pdf-zoom-in" class="p-1 rounded-lg hover:bg-slate-200 text-slate-700 transition" title="확대"><i data-lucide="zoom-in" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i></button>
+          <button onclick="window.print()" class="p-1 rounded-lg hover:bg-slate-200 text-slate-700 transition" title="인쇄"><i data-lucide="printer" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i></button>
         </div>
       </div>
 
       <!-- PDF Continuous Scroll Viewport -->
-      <div class="flex-1 overflow-auto bg-slate-200/70 p-2 sm:p-6 flex justify-center" id="pdf-scroll-area">
+      <div class="flex-1 overflow-auto bg-slate-200/70 p-1 sm:p-4 md:p-6 flex justify-center" id="pdf-scroll-area">
         <div id="pdf-container" class="w-full max-w-4xl flex flex-col items-center">
           <!-- Canvas pages are rendered here -->
         </div>
@@ -378,60 +389,60 @@
 
   <!-- SMART SAVE MODAL -->
   <div id="save-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-100 transform transition-all animate-in fade-in zoom-in-95">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-5 sm:p-6 border border-slate-100 transform transition-all animate-in fade-in zoom-in-95">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-base font-bold text-slate-900 flex items-center">
           <i data-lucide="download-cloud" class="w-5 h-5 mr-2 text-brand-600"></i> 문서 저장 및 내보내기
         </h3>
         <button id="btn-close-save-modal" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg transition"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
-      <p class="text-xs text-slate-500 mb-5">원하시는 저장 및 내보내기 형식을 선택하세요:</p>
+      <p class="text-xs text-slate-500 mb-4 sm:mb-5">원하시는 저장 및 내보내기 형식을 선택하세요:</p>
       
-      <div class="space-y-3">
+      <div class="space-y-2.5 sm:space-y-3">
         <!-- Option 1: HWPX -->
-        <button id="modal-btn-save-hwpx" class="w-full p-3.5 rounded-xl border border-blue-200 hover:border-blue-400 bg-blue-50/30 hover:bg-blue-50/80 transition flex items-center justify-between text-left group">
-          <div class="flex items-center space-x-3.5">
-            <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">HWPX</div>
+        <button id="modal-btn-save-hwpx" class="w-full p-3 sm:p-3.5 rounded-xl border border-blue-200 hover:border-blue-400 bg-blue-50/30 hover:bg-blue-50/80 transition flex items-center justify-between text-left group">
+          <div class="flex items-center space-x-3 sm:space-x-3.5">
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">HWPX</div>
             <div>
               <div class="text-xs font-bold text-slate-800">최신 한글 (.hwpx)로 저장</div>
               <div class="text-[11px] text-slate-500">한컴오피스 2024, 모바일 한글 완벽 호환</div>
             </div>
           </div>
-          <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition"></i>
+          <i data-lucide="chevron-right" class="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition"></i>
         </button>
 
         <!-- Option 2: Excel Export -->
-        <button id="modal-btn-save-excel" class="w-full p-3.5 rounded-xl border border-emerald-200 hover:border-emerald-400 bg-emerald-50/30 hover:bg-emerald-50/80 transition flex items-center justify-between text-left group">
-          <div class="flex items-center space-x-3.5">
-            <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">XLSX</div>
+        <button id="modal-btn-save-excel" class="w-full p-3 sm:p-3.5 rounded-xl border border-emerald-200 hover:border-emerald-400 bg-emerald-50/30 hover:bg-emerald-50/80 transition flex items-center justify-between text-left group">
+          <div class="flex items-center space-x-3 sm:space-x-3.5">
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">XLSX</div>
             <div>
               <div class="text-xs font-bold text-slate-800">엑셀 (.xlsx) 표 데이터 내보내기</div>
               <div class="text-[11px] text-slate-500">문서 내의 표를 엑셀 시트로 즉시 변환 다운로드</div>
             </div>
           </div>
-          <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition"></i>
+          <i data-lucide="chevron-right" class="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition"></i>
         </button>
 
         <!-- Option 3: Print / PDF -->
-        <button id="modal-btn-print" class="w-full p-3.5 rounded-xl border border-slate-200 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-100/80 transition flex items-center justify-between text-left group">
-          <div class="flex items-center space-x-3.5">
-            <div class="w-10 h-10 rounded-xl bg-slate-700 text-white flex items-center justify-center shadow-sm"><i data-lucide="printer" class="w-5 h-5"></i></div>
+        <button id="modal-btn-print" class="w-full p-3 sm:p-3.5 rounded-xl border border-slate-200 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-100/80 transition flex items-center justify-between text-left group">
+          <div class="flex items-center space-x-3 sm:space-x-3.5">
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-700 text-white flex items-center justify-center shadow-xs"><i data-lucide="printer" class="w-4 h-4 sm:w-5 sm:h-5"></i></div>
             <div>
               <div class="text-xs font-bold text-slate-800">인쇄 / PDF로 저장</div>
               <div class="text-[11px] text-slate-500">브라우저 인쇄 기능을 통해 PDF 파일로 바로 출력</div>
             </div>
           </div>
-          <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400 group-hover:text-slate-700 group-hover:translate-x-0.5 transition"></i>
+          <i data-lucide="chevron-right" class="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-slate-700 group-hover:translate-x-0.5 transition"></i>
         </button>
       </div>
     </div>
   </div>
 
   <!-- FOOTER STATUS BAR -->
-  <footer class="bg-white border-t border-slate-200 py-1.5 px-4 text-xs text-slate-400 flex items-center justify-between no-print">
-    <div class="flex items-center space-x-2">
-      <span class="inline-block w-2 h-2 rounded-full bg-emerald-500" id="status-indicator"></span>
-      <span id="status-text">준비 완료 (오프라인 로컬 엔진)</span>
+  <footer class="bg-white border-t border-slate-200 py-1.5 px-3 sm:px-4 text-[11px] sm:text-xs text-slate-400 flex items-center justify-between no-print">
+    <div class="flex items-center space-x-2 truncate">
+      <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" id="status-indicator"></span>
+      <span id="status-text" class="truncate">준비 완료 (오프라인 로컬 엔진)</span>
     </div>
     <div class="hidden sm:block">
       <span>터치 & 클릭으로 셀/텍스트를 바로 편집할 수 있습니다.</span>
@@ -533,7 +544,6 @@
     const modalBtnSaveExcel = document.getElementById('modal-btn-save-excel');
     const modalBtnPrint = document.getElementById('modal-btn-print');
 
-    // Initialize Lucide Icons
     function updateIcons() {
       if (window.lucide) {
         lucide.createIcons();
@@ -595,7 +605,7 @@
       docEditorToolbar.classList.add('hidden');
       saveModal.classList.add('hidden');
 
-      txtEditMode.textContent = '편집 모드';
+      txtEditMode.textContent = '편집';
       btnToggleEdit.classList.remove('bg-amber-50', 'text-amber-700', 'border-amber-300');
       btnToggleEdit.classList.add('bg-white', 'text-slate-700');
 
@@ -638,7 +648,7 @@
         btnToggleEdit.classList.add('bg-amber-50', 'text-amber-700', 'border-amber-300');
         statusText.textContent = '편집 모드 활성화: 원하는 셀이나 텍스트를 클릭하여 수정하세요.';
       } else {
-        txtEditMode.textContent = '편집 모드';
+        txtEditMode.textContent = window.innerWidth < 640 ? '편집' : '편집 모드';
         btnToggleEdit.classList.remove('bg-amber-50', 'text-amber-700', 'border-amber-300');
         btnToggleEdit.classList.add('bg-white', 'text-slate-700');
         statusText.textContent = '읽기 모드';
@@ -648,7 +658,7 @@
         renderExcelTable();
       } else if (currentFileType === 'hwpx' || currentFileType === 'hwp') {
         docContent.setAttribute('contenteditable', isEditMode ? 'true' : 'false');
-        docStatus.textContent = isEditMode ? '(편집 가능 모드)' : '(읽기 모드)';
+        docStatus.textContent = isEditMode ? '(편집)' : '(읽기)';
         if (isEditMode) {
           docEditorToolbar.classList.remove('hidden');
         } else {
@@ -670,7 +680,7 @@
 
       if (type === 'excel') {
         fileBadge.textContent = 'EXCEL';
-        fileBadge.className = 'px-2 py-0.5 text-xs font-semibold rounded-full uppercase tracking-wider bg-emerald-100 text-emerald-800';
+        fileBadge.className = 'px-1.5 py-0.5 text-[10px] sm:text-xs font-semibold rounded-full uppercase tracking-wider bg-emerald-100 text-emerald-800';
         excelView.classList.remove('hidden');
         docView.classList.add('hidden');
         pdfView.classList.add('hidden');
@@ -678,27 +688,27 @@
         docEditorToolbar.classList.add('hidden');
       } else if (type === 'hwpx') {
         fileBadge.textContent = 'HWPX';
-        fileBadge.className = 'px-2 py-0.5 text-xs font-semibold rounded-full uppercase tracking-wider bg-blue-100 text-blue-800';
-        docTitleBadge.innerHTML = `<i data-lucide="file-text" class="w-4 h-4 mr-1 text-blue-600"></i> HWPX 문서 본문`;
+        fileBadge.className = 'px-1.5 py-0.5 text-[10px] sm:text-xs font-semibold rounded-full uppercase tracking-wider bg-blue-100 text-blue-800';
+        docTitleBadge.innerHTML = `<i data-lucide="file-text" class="w-4 h-4 mr-1 text-blue-600 flex-shrink-0"></i> <span class="truncate">HWPX 본문</span>`;
         excelView.classList.add('hidden');
         docView.classList.remove('hidden');
         pdfView.classList.add('hidden');
         btnToggleEdit.classList.remove('hidden');
       } else if (type === 'hwp') {
         fileBadge.textContent = 'HWP 5.0';
-        fileBadge.className = 'px-2 py-0.5 text-xs font-semibold rounded-full uppercase tracking-wider bg-pink-100 text-pink-800';
-        docTitleBadge.innerHTML = `<i data-lucide="file-text" class="w-4 h-4 mr-1 text-pink-600"></i> HWP 바이너리 본문`;
+        fileBadge.className = 'px-1.5 py-0.5 text-[10px] sm:text-xs font-semibold rounded-full uppercase tracking-wider bg-pink-100 text-pink-800';
+        docTitleBadge.innerHTML = `<i data-lucide="file-text" class="w-4 h-4 mr-1 text-pink-600 flex-shrink-0"></i> <span class="truncate">HWP 본문</span>`;
         excelView.classList.add('hidden');
         docView.classList.remove('hidden');
         pdfView.classList.add('hidden');
         btnToggleEdit.classList.remove('hidden');
       } else if (type === 'pdf') {
         fileBadge.textContent = 'PDF';
-        fileBadge.className = 'px-2 py-0.5 text-xs font-semibold rounded-full uppercase tracking-wider bg-rose-100 text-rose-800';
+        fileBadge.className = 'px-1.5 py-0.5 text-[10px] sm:text-xs font-semibold rounded-full uppercase tracking-wider bg-rose-100 text-rose-800';
         excelView.classList.add('hidden');
         docView.classList.add('hidden');
         pdfView.classList.remove('hidden');
-        btnToggleEdit.classList.add('hidden'); // PDF is high-fidelity viewer
+        btnToggleEdit.classList.add('hidden');
       }
       updateIcons();
     }
@@ -729,7 +739,7 @@
       workbook.SheetNames.forEach((sheetName, idx) => {
         const btn = document.createElement('button');
         btn.textContent = sheetName;
-        btn.className = `px-3 py-1.5 text-xs font-medium rounded-lg transition whitespace-nowrap ${
+        btn.className = `px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-medium rounded-lg transition whitespace-nowrap ${
           idx === 0
             ? 'bg-emerald-600 text-white shadow-xs'
             : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
@@ -743,9 +753,9 @@
       currentSheetName = sheetName;
       Array.from(excelTabs.children).forEach((tab) => {
         if (tab.textContent === sheetName) {
-          tab.className = 'px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-600 text-white shadow-xs whitespace-nowrap';
+          tab.className = 'px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-medium rounded-lg bg-emerald-600 text-white shadow-xs whitespace-nowrap';
         } else {
-          tab.className = 'px-3 py-1.5 text-xs font-medium rounded-lg bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap';
+          tab.className = 'px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-medium rounded-lg bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap';
         }
       });
 
@@ -760,50 +770,46 @@
     function renderExcelTable() {
       excelTable.innerHTML = '';
       if (!currentSheetData || currentSheetData.length === 0) {
-        excelStats.textContent = '0 행 × 0 열';
+        excelStats.textContent = '0×0';
         return;
       }
 
       let maxCols = 0;
       currentSheetData.forEach(row => { if (row.length > maxCols) maxCols = row.length; });
       maxCols = Math.max(maxCols, 1);
-      excelStats.textContent = `${currentSheetData.length} 행 × ${maxCols} 열`;
+      excelStats.textContent = `${currentSheetData.length}×${maxCols}`;
 
-      // Header row (A, B, C...)
       const thead = document.createElement('thead');
       const headerTr = document.createElement('tr');
       headerTr.className = 'bg-slate-100 text-slate-600 sticky top-0 z-10 select-none';
 
       const cornerTh = document.createElement('th');
-      cornerTh.className = 'border border-slate-300 p-2 w-12 text-center text-[11px] font-mono bg-slate-200 text-slate-500';
+      cornerTh.className = 'border border-slate-300 p-1.5 sm:p-2 w-10 sm:w-12 text-center text-[11px] font-mono bg-slate-200 text-slate-500';
       cornerTh.textContent = '#';
       headerTr.appendChild(cornerTh);
 
       for (let c = 0; c < maxCols; c++) {
         const th = document.createElement('th');
-        th.className = 'border border-slate-300 p-2 min-w-[90px] text-center text-xs font-semibold text-slate-700 bg-slate-100';
+        th.className = 'border border-slate-300 p-1.5 sm:p-2 min-w-[75px] sm:min-w-[90px] text-center text-xs font-semibold text-slate-700 bg-slate-100';
         th.textContent = getExcelColumnLabel(c);
         headerTr.appendChild(th);
       }
       thead.appendChild(headerTr);
       excelTable.appendChild(thead);
 
-      // Body rows
       const tbody = document.createElement('tbody');
       currentSheetData.forEach((row, rIdx) => {
         const tr = document.createElement('tr');
         tr.className = rIdx % 2 === 0 ? 'bg-white hover:bg-slate-50/80' : 'bg-slate-50/40 hover:bg-slate-50';
 
-        // Row Index
         const rowNumTd = document.createElement('td');
-        rowNumTd.className = 'border border-slate-300 p-1.5 text-center text-[11px] font-mono text-slate-400 bg-slate-50 select-none font-medium';
+        rowNumTd.className = 'border border-slate-300 p-1 sm:p-1.5 text-center text-[10px] sm:text-[11px] font-mono text-slate-400 bg-slate-50 select-none font-medium';
         rowNumTd.textContent = rIdx + 1;
         tr.appendChild(rowNumTd);
 
-        // Cells
         for (let cIdx = 0; cIdx < maxCols; cIdx++) {
           const td = document.createElement('td');
-          td.className = 'border border-slate-300 p-2 text-slate-800 text-xs sm:text-sm select-text outline-none';
+          td.className = 'border border-slate-300 p-1.5 sm:p-2 text-slate-800 text-xs sm:text-sm select-text outline-none';
           const val = row[cIdx] !== undefined ? row[cIdx] : '';
           td.textContent = val;
 
@@ -864,7 +870,6 @@
       }
     });
 
-    // Excel Add / Delete Row
     btnAddRow.addEventListener('click', () => {
       if (!currentSheetData) return;
       const colCount = currentSheetData[0] ? currentSheetData[0].length : 5;
@@ -892,7 +897,6 @@
       statusText.textContent = `행 삭제 완료`;
     });
 
-    // Excel Add / Delete Column
     btnAddCol.addEventListener('click', () => {
       if (!currentSheetData) return;
       const insertCol = selectedExcelCol + 1;
@@ -915,7 +919,6 @@
       statusText.textContent = `열 삭제 완료`;
     });
 
-    // Excel Comma Format
     btnCommaFmt.addEventListener('click', () => {
       if (!currentSheetData) return;
       const raw = currentSheetData[selectedExcelRow]?.[selectedExcelCol];
@@ -931,7 +934,6 @@
       }
     });
 
-    // Excel Quick Fill Dropdown
     btnExcelQuickFill.addEventListener('click', (e) => {
       e.stopPropagation();
       excelQuickMenu.classList.toggle('hidden');
@@ -1158,7 +1160,7 @@
           if (directParentTr !== trNode) return;
 
           const tdElem = document.createElement('td');
-          tdElem.className = 'border border-slate-400 p-2 align-middle text-slate-800 break-words whitespace-pre-line';
+          tdElem.className = 'border border-slate-400 p-1.5 sm:p-2 align-middle text-slate-800 break-words whitespace-pre-line';
 
           const colSpan = tcNode.getAttribute('colSpan');
           const rowSpan = tcNode.getAttribute('rowSpan');
@@ -1370,7 +1372,7 @@
                 const p = document.createElement('p');
                 p.className = 'text-slate-800 leading-relaxed text-sm sm:text-base select-text break-words';
                 if (text.startsWith('-') || text.includes('몸무게') || text.includes('투약') || text.includes('점검표') || text.includes('건강체크')) {
-                  p.className = 'text-slate-900 font-bold text-center text-lg sm:text-xl my-4 tracking-wider';
+                  p.className = 'text-slate-900 font-bold text-center text-base sm:text-xl my-3 sm:my-4 tracking-wider';
                 }
                 p.textContent = text;
                 docContent.appendChild(p);
@@ -1436,7 +1438,7 @@
       if (rowIndices.length === 0) return;
 
       const wrapper = document.createElement('div');
-      wrapper.className = 'w-full my-4 overflow-x-auto';
+      wrapper.className = 'w-full my-3 sm:my-4 overflow-x-auto';
 
       const table = document.createElement('table');
       table.className = 'w-full border-collapse border border-slate-400 text-xs sm:text-sm select-text bg-white shadow-sm';
@@ -1448,13 +1450,13 @@
         const cells = rowsMap[rowIdx].sort((a, b) => a.colAddr - b.colAddr);
         cells.forEach((cell) => {
           const td = document.createElement('td');
-          td.className = 'border border-slate-400 p-2 align-middle text-slate-800 break-words whitespace-pre-line';
+          td.className = 'border border-slate-400 p-1.5 sm:p-2 align-middle text-slate-800 break-words whitespace-pre-line';
 
           if (cell.colSpan > 1) td.colSpan = cell.colSpan;
           if (cell.rowSpan > 1) td.rowSpan = cell.rowSpan;
 
           if (rowIdx === 0 || rowIdx === 1 && (cell.texts.join('').includes('월') || cell.texts.join('').includes('성명'))) {
-            td.className = 'border border-slate-400 p-2 align-middle text-slate-900 font-semibold bg-slate-100 text-center whitespace-pre-line';
+            td.className = 'border border-slate-400 p-1.5 sm:p-2 align-middle text-slate-900 font-semibold bg-slate-100 text-center whitespace-pre-line';
           } else {
             const content = cell.texts.join(' ');
             if (cell.colAddr === 0 || cell.colAddr === 1 && content.length <= 4 || cell.colAddr >= 2 && content.length <= 5) {
@@ -1650,14 +1652,14 @@
 
     async function renderPdfAllPages() {
       pdfContainer.innerHTML = '';
-      txtPdfPageInfo.textContent = `${currentPdfPageNum} / ${totalPdfPages} 페이지`;
+      txtPdfPageInfo.textContent = `${currentPdfPageNum}/${totalPdfPages}P`;
 
       for (let pageNum = 1; pageNum <= totalPdfPages; pageNum++) {
         const page = await currentPdfDoc.getPage(pageNum);
         const viewport = page.getViewport({ scale: pdfZoom });
 
         const pageWrapper = document.createElement('div');
-        pageWrapper.className = 'my-4 bg-white shadow-md border border-slate-300 rounded overflow-hidden flex flex-col items-center relative';
+        pageWrapper.className = 'my-3 sm:my-4 bg-white shadow-md border border-slate-300 rounded overflow-hidden flex flex-col items-center relative';
         pageWrapper.setAttribute('data-page-num', pageNum);
 
         const canvas = document.createElement('canvas');
@@ -1668,7 +1670,7 @@
         canvas.style.height = 'auto';
 
         const pageBadge = document.createElement('div');
-        pageBadge.className = 'text-[11px] font-mono text-slate-400 py-1 bg-slate-50 w-full text-center border-b border-slate-100 select-none';
+        pageBadge.className = 'text-[10px] sm:text-[11px] font-mono text-slate-400 py-0.5 sm:py-1 bg-slate-50 w-full text-center border-b border-slate-100 select-none';
         pageBadge.textContent = `${pageNum} / ${totalPdfPages}`;
 
         pageWrapper.appendChild(pageBadge);
@@ -1688,7 +1690,7 @@
       const target = pdfContainer.querySelector(`[data-page-num="${num}"]`);
       if (target) {
         target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        txtPdfPageInfo.textContent = `${num} / ${totalPdfPages} 페이지`;
+        txtPdfPageInfo.textContent = `${num}/${totalPdfPages}P`;
       }
     }
 
@@ -1880,36 +1882,36 @@
 
     document.getElementById('btn-sample-hwpx').addEventListener('click', () => {
       docContent.innerHTML = `
-        <p class="text-slate-900 font-bold text-center text-xl my-4 tracking-wider">어르신 일일 건강체크 관리대장</p>
-        <p class="text-right text-xs text-slate-500 mb-2">작성일자: 2026년 10월 26일</p>
-        <div class="w-full my-4 overflow-x-auto">
+        <p class="text-slate-900 font-bold text-center text-lg sm:text-xl my-3 sm:my-4 tracking-wider">어르신 일일 건강체크 관리대장</p>
+        <p class="text-right text-[11px] sm:text-xs text-slate-500 mb-2">작성일자: 2026년 10월 26일</p>
+        <div class="w-full my-3 sm:my-4 overflow-x-auto">
           <table class="w-full border-collapse border border-slate-400 text-xs sm:text-sm select-text bg-white shadow-sm">
             <thead>
               <tr class="bg-slate-100 text-slate-900 font-semibold text-center border-b border-slate-400">
-                <th class="border border-slate-400 p-2 w-16">연번</th>
-                <th class="border border-slate-400 p-2 w-28">성명</th>
-                <th class="border border-slate-400 p-2">건강 및 투약 상태</th>
-                <th class="border border-slate-400 p-2 w-32">비고</th>
+                <th class="border border-slate-400 p-1.5 sm:p-2 w-12 sm:w-16">연번</th>
+                <th class="border border-slate-400 p-1.5 sm:p-2 w-20 sm:w-28">성명</th>
+                <th class="border border-slate-400 p-1.5 sm:p-2">건강 및 투약 상태</th>
+                <th class="border border-slate-400 p-1.5 sm:p-2 w-24 sm:w-32">비고</th>
               </tr>
             </thead>
             <tbody>
               <tr class="border-b border-slate-300">
-                <td class="border border-slate-400 p-2 text-center">1</td>
-                <td class="border border-slate-400 p-2 text-center font-medium">강후신</td>
-                <td class="border border-slate-400 p-2">상태양호 (피부질환으로 로션 도포)</td>
-                <td class="border border-slate-400 p-2 text-center">특이사항 없음</td>
+                <td class="border border-slate-400 p-1.5 sm:p-2 text-center">1</td>
+                <td class="border border-slate-400 p-1.5 sm:p-2 text-center font-medium">강후신</td>
+                <td class="border border-slate-400 p-1.5 sm:p-2">상태양호 (피부질환으로 로션 도포)</td>
+                <td class="border border-slate-400 p-1.5 sm:p-2 text-center">특이사항 없음</td>
               </tr>
               <tr class="border-b border-slate-300">
-                <td class="border border-slate-400 p-2 text-center">2</td>
-                <td class="border border-slate-400 p-2 text-center font-medium">김갑례</td>
-                <td class="border border-slate-400 p-2">상태양호, 식사 1공기 모두 드심</td>
-                <td class="border border-slate-400 p-2 text-center">정상</td>
+                <td class="border border-slate-400 p-1.5 sm:p-2 text-center">2</td>
+                <td class="border border-slate-400 p-1.5 sm:p-2 text-center font-medium">김갑례</td>
+                <td class="border border-slate-400 p-1.5 sm:p-2">상태양호, 식사 1공기 모두 드심</td>
+                <td class="border border-slate-400 p-1.5 sm:p-2 text-center">정상</td>
               </tr>
               <tr class="border-b border-slate-300">
-                <td class="border border-slate-400 p-2 text-center">3</td>
-                <td class="border border-slate-400 p-2 text-center font-medium">두경용</td>
-                <td class="border border-slate-400 p-2">설사 증세로 지사제 투약 및 수분 섭취 권장</td>
-                <td class="border border-slate-400 p-2 text-center text-amber-600 font-medium">관찰 요망</td>
+                <td class="border border-slate-400 p-1.5 sm:p-2 text-center">3</td>
+                <td class="border border-slate-400 p-1.5 sm:p-2 text-center font-medium">두경용</td>
+                <td class="border border-slate-400 p-1.5 sm:p-2">설사 증세로 지사제 투약 및 수분 섭취 권장</td>
+                <td class="border border-slate-400 p-1.5 sm:p-2 text-center text-amber-600 font-medium">관찰 요망</td>
               </tr>
             </tbody>
           </table>
