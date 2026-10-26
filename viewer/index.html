@@ -2,6 +2,9 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -145,6 +148,31 @@
 
       <!-- Action Buttons (Responsive on Mobile) -->
       <div class="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+        <!-- New Document Button with Dropdown -->
+        <div class="relative flex-shrink-0">
+          <button id="btn-new-doc" class="inline-flex items-center px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-brand-700 text-xs sm:text-sm font-semibold transition active:scale-95 shadow-xs border border-indigo-200 whitespace-nowrap" title="새 문서 만들기">
+            <i data-lucide="file-plus-2" class="w-4 h-4 sm:mr-1.5 text-brand-600"></i>
+            <span class="hidden sm:inline">새 문서</span>
+            <span class="sm:hidden text-xs">새문서</span>
+          </button>
+          <div id="new-doc-menu" class="hidden absolute left-0 sm:right-0 top-full mt-1.5 w-52 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 text-xs">
+            <button id="btn-create-blank-doc" class="w-full text-left px-3.5 py-2.5 hover:bg-slate-50 text-slate-800 flex items-center space-x-2.5 transition">
+              <div class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0 font-bold"><i data-lucide="file-text" class="w-4 h-4"></i></div>
+              <div>
+                <div class="font-bold text-slate-800">새 한글 문서 (HWPX)</div>
+                <div class="text-[10px] text-slate-400">서식/표 자유 편집 가능한 문서</div>
+              </div>
+            </button>
+            <div class="border-t border-slate-100 my-1"></div>
+            <button id="btn-create-blank-excel" class="w-full text-left px-3.5 py-2.5 hover:bg-slate-50 text-slate-800 flex items-center space-x-2.5 transition">
+              <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 font-bold"><i data-lucide="table" class="w-4 h-4"></i></div>
+              <div>
+                <div class="font-bold text-slate-800">새 엑셀 시트 (XLSX)</div>
+                <div class="text-[10px] text-slate-400">스프레드시트 표 문서</div>
+              </div>
+            </button>
+          </div>
+        </div>
         <!-- Open File Input -->
         <label for="file-input" class="cursor-pointer inline-flex items-center px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-medium transition active:scale-95 shadow-xs" title="파일 열기">
           <i data-lucide="folder-open" class="w-4 h-4 sm:mr-1.5 text-slate-600"></i>
@@ -154,13 +182,13 @@
         <input type="file" id="file-input" class="hidden" accept=".xlsx,.xls,.csv,.hwpx,.hwp,.pdf" />
 
         <!-- Edit Mode Toggle -->
-        <button id="btn-toggle-edit" class="hidden inline-flex items-center px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-medium transition active:scale-95 shadow-xs" title="편집 모드">
+        <button id="btn-toggle-edit" class="hidden inline-flex items-center px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-medium transition active:scale-95 shadow-xs whitespace-nowrap flex-shrink-0" title="편집 모드">
           <i data-lucide="edit-3" class="w-4 h-4 sm:mr-1.5 text-slate-600" id="icon-edit"></i>
           <span id="txt-edit-mode" class="text-xs sm:text-sm">편집</span>
         </button>
 
         <!-- Save / Download Button -->
-        <button id="btn-download" class="hidden inline-flex items-center px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-xs sm:text-sm font-medium shadow-xs transition active:scale-95" title="저장 및 내보내기">
+        <button id="btn-download" class="hidden inline-flex items-center px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-xs sm:text-sm font-medium shadow-xs transition active:scale-95 whitespace-nowrap flex-shrink-0" title="저장 및 내보내기">
           <i data-lucide="download" class="w-4 h-4 sm:mr-1.5"></i>
           <span class="hidden sm:inline">저장</span>
         </button>
@@ -198,14 +226,36 @@
           <p class="text-[11px] text-slate-400 mt-1">지원 형식: .xlsx, .xls, .csv, .hwpx, .hwp, .pdf</p>
         </div>
 
+        <!-- New Document Quick Action Cards -->
+        <div class="mb-4 grid grid-cols-2 gap-2 text-left">
+          <button id="welcome-btn-new-hwpx" class="p-3 rounded-xl border border-blue-200 bg-blue-50/50 hover:bg-blue-50 transition active:scale-95 group flex flex-col justify-between">
+            <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center mb-2 shadow-xs">
+              <i data-lucide="file-text" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-slate-900 group-hover:text-blue-700">+ 새 한글 문서</div>
+              <div class="text-[10px] text-slate-400">HWPX 양식 작성</div>
+            </div>
+          </button>
+          <button id="welcome-btn-new-excel" class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 transition active:scale-95 group flex flex-col justify-between">
+            <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center mb-2 shadow-xs">
+              <i data-lucide="table" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-slate-900 group-hover:text-emerald-700">+ 새 엑셀 시트</div>
+              <div class="text-[10px] text-slate-400">스프레드시트 작성</div>
+            </div>
+          </button>
+        </div>
+
         <!-- Quick Test Buttons -->
         <div class="pt-3 sm:pt-4 border-t border-slate-100 flex flex-wrap items-center justify-center gap-2">
-          <span class="text-xs text-slate-400 w-full text-center">빠른 테스트:</span>
-          <button id="btn-sample-excel" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs font-medium transition flex items-center">
-            <i data-lucide="table" class="w-3.5 h-3.5 mr-1"></i> 샘플 엑셀
+          <span class="text-xs text-slate-400 w-full text-center">체험용 샘플 문서:</span>
+          <button id="btn-sample-excel" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition flex items-center">
+            <i data-lucide="table" class="w-3.5 h-3.5 mr-1 text-emerald-600"></i> 샘플 엑셀
           </button>
-          <button id="btn-sample-hwpx" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-medium transition flex items-center">
-            <i data-lucide="file-text" class="w-3.5 h-3.5 mr-1"></i> 샘플 HWPX
+          <button id="btn-sample-hwpx" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition flex items-center">
+            <i data-lucide="file-text" class="w-3.5 h-3.5 mr-1 text-blue-600"></i> 샘플 HWPX
           </button>
         </div>
 
@@ -290,32 +340,77 @@
       </div>
 
       <!-- Document Rich Editor Toolbar (Mobile Swipeable Single Bar) -->
-      <div id="doc-editor-toolbar" class="hidden bg-white border-b border-indigo-100 px-2 sm:px-3 py-1.5 sm:py-2 flex items-center overflow-x-auto whitespace-nowrap scrollbar-none gap-1 sm:gap-2 shadow-xs z-20 no-print">
-        <!-- Text Formatting & Table Controls -->
-        <div class="flex items-center flex-shrink-0 space-x-0.5 sm:space-x-1">
+      <div id="doc-editor-toolbar" class="hidden bg-white border-b border-indigo-100 px-2 sm:px-3 py-1.5 sm:py-2 flex items-center overflow-x-auto whitespace-nowrap scrollbar-none gap-1 sm:gap-1.5 shadow-xs z-20 no-print">
+        <!-- History Controls -->
+        <div class="flex items-center flex-shrink-0 space-x-0.5">
           <button id="btn-doc-undo" class="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition" title="실행 취소 (Ctrl+Z)"><i data-lucide="undo" class="w-4 h-4"></i></button>
           <button id="btn-doc-redo" class="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition" title="다시 실행 (Ctrl+Y)"><i data-lucide="redo" class="w-4 h-4"></i></button>
-          
-          <div class="w-px h-4 bg-slate-300 mx-1"></div>
-          
-          <button id="btn-doc-bold" class="p-1.5 text-slate-700 hover:bg-slate-100 rounded-lg transition font-bold" title="굵게 (Ctrl+B)"><i data-lucide="bold" class="w-4 h-4"></i></button>
-          <button id="btn-doc-underline" class="p-1.5 text-slate-700 hover:bg-slate-100 rounded-lg transition" title="밑줄 (Ctrl+U)"><i data-lucide="underline" class="w-4 h-4"></i></button>
-          <button id="btn-doc-hilite" class="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition" title="형광펜"><i data-lucide="highlighter" class="w-4 h-4"></i></button>
-          
-          <div class="w-px h-4 bg-slate-300 mx-1"></div>
+        </div>
 
+        <div class="w-px h-4 bg-slate-300 mx-0.5 flex-shrink-0"></div>
+
+        <!-- Heading / Paragraph Style Selector -->
+        <div class="flex items-center flex-shrink-0">
+          <select id="sel-doc-format" class="text-xs bg-slate-100 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:border-brand-500 font-medium">
+            <option value="p">본문</option>
+            <option value="h1">큰 제목 (H1)</option>
+            <option value="h2">중간 제목 (H2)</option>
+            <option value="h3">소제목 (H3)</option>
+          </select>
+        </div>
+
+        <div class="w-px h-4 bg-slate-300 mx-0.5 flex-shrink-0"></div>
+
+        <!-- Font Styling -->
+        <div class="flex items-center flex-shrink-0 space-x-0.5">
+          <button id="btn-doc-bold" class="p-1.5 text-slate-700 hover:bg-slate-100 rounded-lg transition font-bold" title="굵게 (Ctrl+B)"><i data-lucide="bold" class="w-4 h-4"></i></button>
+          <button id="btn-doc-italic" class="p-1.5 text-slate-700 hover:bg-slate-100 rounded-lg transition italic" title="기울임 (Ctrl+I)"><i data-lucide="italic" class="w-4 h-4"></i></button>
+          <button id="btn-doc-underline" class="p-1.5 text-slate-700 hover:bg-slate-100 rounded-lg transition" title="밑줄 (Ctrl+U)"><i data-lucide="underline" class="w-4 h-4"></i></button>
+          <button id="btn-doc-strike" class="p-1.5 text-slate-700 hover:bg-slate-100 rounded-lg transition" title="취소선"><i data-lucide="strikethrough" class="w-4 h-4"></i></button>
+          
+          <!-- Text Color Picker -->
+          <label class="p-1.5 text-slate-700 hover:bg-slate-100 rounded-lg transition cursor-pointer flex items-center relative" title="글자 색상">
+            <i data-lucide="palette" class="w-4 h-4 text-slate-700"></i>
+            <input type="color" id="input-doc-color" class="opacity-0 absolute inset-0 w-full h-full cursor-pointer" value="#000000" />
+          </label>
+
+          <!-- Highlighter Picker -->
+          <label class="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition cursor-pointer flex items-center relative" title="형광펜 / 배경색">
+            <i data-lucide="highlighter" class="w-4 h-4"></i>
+            <input type="color" id="input-doc-hilite" class="opacity-0 absolute inset-0 w-full h-full cursor-pointer" value="#fef08a" />
+          </label>
+        </div>
+
+        <div class="w-px h-4 bg-slate-300 mx-0.5 flex-shrink-0"></div>
+
+        <!-- Alignment -->
+        <div class="flex items-center flex-shrink-0 space-x-0.5">
           <button id="btn-doc-align-left" class="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition" title="왼쪽 정렬"><i data-lucide="align-left" class="w-4 h-4"></i></button>
           <button id="btn-doc-align-center" class="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition" title="가운데 정렬"><i data-lucide="align-center" class="w-4 h-4"></i></button>
           <button id="btn-doc-align-right" class="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition" title="오른쪽 정렬"><i data-lucide="align-right" class="w-4 h-4"></i></button>
+        </div>
 
-          <div class="w-px h-4 bg-slate-300 mx-1"></div>
+        <div class="w-px h-4 bg-slate-300 mx-0.5 flex-shrink-0"></div>
 
-          <!-- Table Controls -->
+        <!-- Table Operations -->
+        <div class="flex items-center flex-shrink-0 space-x-1">
+          <!-- Insert New Table Button -->
+          <button id="btn-doc-insert-table" class="px-2 py-1 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold rounded-lg flex items-center border border-emerald-200 transition" title="본문에 새 표 삽입">
+            <i data-lucide="grid-plus" class="w-3.5 h-3.5 mr-1 text-emerald-600"></i> 표 삽입
+          </button>
+
+          <!-- Table Row Add/Del -->
           <button id="btn-doc-add-row" class="px-2 py-1 text-xs bg-indigo-50 hover:bg-indigo-100 text-brand-700 font-semibold rounded-lg flex items-center border border-indigo-200 transition" title="현재 표의 선택 행 아래에 새 행 삽입">
-            <i data-lucide="plus-circle" class="w-3.5 h-3.5 mr-1 text-brand-600"></i> <span class="hidden sm:inline">표 </span>행 추가
+            <i data-lucide="plus" class="w-3.5 h-3.5 mr-0.5 text-brand-600"></i> 행
           </button>
           <button id="btn-doc-del-row" class="px-2 py-1 text-xs bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold rounded-lg flex items-center border border-rose-200 transition" title="선택된 표 행 삭제">
-            <i data-lucide="trash-2" class="w-3.5 h-3.5 mr-1 text-rose-500"></i> 행 삭제
+            <i data-lucide="minus" class="w-3.5 h-3.5 mr-0.5 text-rose-500"></i> 행
+          </button>
+          <button id="btn-doc-add-col" class="px-2 py-1 text-xs bg-indigo-50 hover:bg-indigo-100 text-brand-700 font-semibold rounded-lg flex items-center border border-indigo-200 transition" title="현재 표 오른쪽에 새 열 삽입">
+            <i data-lucide="plus" class="w-3.5 h-3.5 mr-0.5 text-blue-600"></i> 열
+          </button>
+          <button id="btn-doc-del-col" class="px-2 py-1 text-xs bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold rounded-lg flex items-center border border-rose-200 transition" title="선택된 표 열 삭제">
+            <i data-lucide="minus" class="w-3.5 h-3.5 mr-0.5 text-rose-500"></i> 열
           </button>
         </div>
 
@@ -386,6 +481,33 @@
     </div>
 
   </main>
+
+  
+  <!-- INSERT TABLE MODAL -->
+  <div id="insert-table-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5 border border-slate-100 transform transition-all animate-in fade-in zoom-in-95">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-base font-bold text-slate-900 flex items-center">
+          <i data-lucide="table" class="w-5 h-5 mr-2 text-emerald-600"></i> 새 표 삽입하기
+        </h3>
+        <button id="btn-close-table-modal" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div class="space-y-4 mb-5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">행 개수 (가로 줄)</label>
+          <input type="number" id="input-tbl-rows" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:border-brand-500 focus:outline-none" value="5" min="1" max="50">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">열 개수 (세로 칸)</label>
+          <input type="number" id="input-tbl-cols" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:border-brand-500 focus:outline-none" value="4" min="1" max="20">
+        </div>
+      </div>
+      <div class="flex items-center justify-end space-x-2">
+        <button id="btn-cancel-insert-table" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition">취소</button>
+        <button id="btn-confirm-insert-table" class="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition shadow-xs">표 만들기</button>
+      </div>
+    </div>
+  </div>
 
   <!-- SMART SAVE MODAL -->
   <div id="save-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
@@ -1921,6 +2043,269 @@
       statusText.textContent = '샘플 한글(HWPX) 문서 로드 완료';
       applyEditMode();
     });
+
+    // --------------------------------------------------------------------------
+    // NEW DOCUMENT & ADVANCED EDITOR ENGINE (Iteration 10)
+    // --------------------------------------------------------------------------
+    const btnNewDoc = document.getElementById('btn-new-doc');
+    const newDocMenu = document.getElementById('new-doc-menu');
+    const btnCreateBlankDoc = document.getElementById('btn-create-blank-doc');
+    const btnCreateBlankExcel = document.getElementById('btn-create-blank-excel');
+    const welcomeBtnNewHwpx = document.getElementById('welcome-btn-new-hwpx');
+    const welcomeBtnNewExcel = document.getElementById('welcome-btn-new-excel');
+
+    // Insert Table Modal Elements
+    const insertTableModal = document.getElementById('insert-table-modal');
+    const btnDocInsertTable = document.getElementById('btn-doc-insert-table');
+    const btnCloseTableModal = document.getElementById('btn-close-table-modal');
+    const btnCancelInsertTable = document.getElementById('btn-cancel-insert-table');
+    const btnConfirmInsertTable = document.getElementById('btn-confirm-insert-table');
+    const inputTblRows = document.getElementById('input-tbl-rows');
+    const inputTblCols = document.getElementById('input-tbl-cols');
+
+    // Advanced Formatting Elements
+    const selDocFormat = document.getElementById('sel-doc-format');
+    const btnDocBold = document.getElementById('btn-doc-bold');
+    const btnDocItalic = document.getElementById('btn-doc-italic');
+    const btnDocUnderline = document.getElementById('btn-doc-underline');
+    const btnDocStrike = document.getElementById('btn-doc-strike');
+    const inputDocColor = document.getElementById('input-doc-color');
+    const inputDocHilite = document.getElementById('input-doc-hilite');
+    const btnDocUndo = document.getElementById('btn-doc-undo');
+    const btnDocRedo = document.getElementById('btn-doc-redo');
+    const btnDocAlignLeft = document.getElementById('btn-doc-align-left');
+    const btnDocAlignCenter = document.getElementById('btn-doc-align-center');
+    const btnDocAlignRight = document.getElementById('btn-doc-align-right');
+    const btnDocAddCol = document.getElementById('btn-doc-add-col');
+    const btnDocDelCol = document.getElementById('btn-doc-del-col');
+
+    // New Doc Menu Toggle
+    if (btnNewDoc) {
+      btnNewDoc.addEventListener('click', (e) => {
+        e.stopPropagation();
+        newDocMenu.classList.toggle('hidden');
+      });
+    }
+
+    document.addEventListener('click', () => {
+      if (newDocMenu) newDocMenu.classList.add('hidden');
+    });
+
+    // Create Blank HWPX Doc
+    function createBlankDoc() {
+      if (newDocMenu) newDocMenu.classList.add('hidden');
+      docContent.innerHTML = `
+        <h1 class="text-slate-900 font-bold text-center text-xl sm:text-2xl my-3 tracking-wider" style="outline: none;">새 문서 제목을 입력하세요</h1>
+        <p class="text-right text-xs text-slate-400 mb-4" style="outline: none;">작성일: ${new Date().toLocaleDateString('ko-KR')}</p>
+        <p class="text-slate-800 leading-relaxed text-sm sm:text-base my-2" style="outline: none;">여기에 본문 내용을 자유롭게 입력하세요. 상단 서식 도구를 사용해 글자 스타일을 변경하거나 새 표를 삽입할 수 있습니다.</p>
+        <div class="w-full my-4 overflow-x-auto">
+          <table class="w-full border-collapse border border-slate-400 text-xs sm:text-sm bg-white shadow-xs">
+            <thead>
+              <tr class="bg-slate-100 text-slate-800 font-semibold text-center border-b border-slate-400">
+                <th class="border border-slate-400 p-2 w-16">번호</th>
+                <th class="border border-slate-400 p-2 w-28">구분</th>
+                <th class="border border-slate-400 p-2">내용</th>
+                <th class="border border-slate-400 p-2 w-24">비고</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="border border-slate-400 p-2 text-center">1</td>
+                <td class="border border-slate-400 p-2 text-center">항목 1</td>
+                <td class="border border-slate-400 p-2">내용을 입력하세요</td>
+                <td class="border border-slate-400 p-2 text-center">정상</td>
+              </tr>
+              <tr>
+                <td class="border border-slate-400 p-2 text-center">2</td>
+                <td class="border border-slate-400 p-2 text-center">항목 2</td>
+                <td class="border border-slate-400 p-2"></td>
+                <td class="border border-slate-400 p-2 text-center"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="text-slate-800 leading-relaxed text-sm sm:text-base my-2" style="outline: none;"><br></p>
+      `;
+      setupHeader('hwpx', '새문서_' + new Date().toISOString().slice(2,10).replace(/-/g,'') + '.hwpx');
+      isEditMode = true;
+      applyEditMode();
+      statusText.textContent = '새 문서가 준비되었습니다. 자유롭게 작성 및 편집하세요.';
+    }
+
+    if (btnCreateBlankDoc) btnCreateBlankDoc.addEventListener('click', createBlankDoc);
+    if (welcomeBtnNewHwpx) welcomeBtnNewHwpx.addEventListener('click', createBlankDoc);
+
+    // Create Blank Excel Sheet
+    function createBlankExcel() {
+      if (newDocMenu) newDocMenu.classList.add('hidden');
+      const ws_data = [
+        ["연번", "구분", "항목", "수량", "단가", "금액", "비고"],
+        [1, "기본", "품목 1", 1, 10000, 10000, ""],
+        [2, "기본", "품목 2", 2, 5000, 10000, ""],
+        [3, "", "", "", "", "", ""],
+        [4, "", "", "", "", "", ""],
+        [5, "", "", "", "", "", ""]
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(ws_data);
+      workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, ws, "Sheet1");
+      setupHeader('excel', '새시트_' + new Date().toISOString().slice(2,10).replace(/-/g,'') + '.xlsx');
+      buildExcelTabs();
+      switchExcelSheet("Sheet1");
+      isEditMode = true;
+      applyEditMode();
+      statusText.textContent = '새 엑셀 시트가 준비되었습니다.';
+    }
+
+    if (btnCreateBlankExcel) btnCreateBlankExcel.addEventListener('click', createBlankExcel);
+    if (welcomeBtnNewExcel) welcomeBtnNewExcel.addEventListener('click', createBlankExcel);
+
+    // Rich Text Formatting Actions
+    if (btnDocUndo) btnDocUndo.addEventListener('click', () => document.execCommand('undo', false, null));
+    if (btnDocRedo) btnDocRedo.addEventListener('click', () => document.execCommand('redo', false, null));
+    if (btnDocBold) btnDocBold.addEventListener('click', () => document.execCommand('bold', false, null));
+    if (btnDocItalic) btnDocItalic.addEventListener('click', () => document.execCommand('italic', false, null));
+    if (btnDocUnderline) btnDocUnderline.addEventListener('click', () => document.execCommand('underline', false, null));
+    if (btnDocStrike) btnDocStrike.addEventListener('click', () => document.execCommand('strikeThrough', false, null));
+    if (btnDocAlignLeft) btnDocAlignLeft.addEventListener('click', () => document.execCommand('justifyLeft', false, null));
+    if (btnDocAlignCenter) btnDocAlignCenter.addEventListener('click', () => document.execCommand('justifyCenter', false, null));
+    if (btnDocAlignRight) btnDocAlignRight.addEventListener('click', () => document.execCommand('justifyRight', false, null));
+
+    if (inputDocColor) {
+      inputDocColor.addEventListener('input', (e) => {
+        document.execCommand('foreColor', false, e.target.value);
+      });
+    }
+
+    if (inputDocHilite) {
+      inputDocHilite.addEventListener('input', (e) => {
+        document.execCommand('hiliteColor', false, e.target.value);
+      });
+    }
+
+    if (selDocFormat) {
+      selDocFormat.addEventListener('change', (e) => {
+        const val = e.target.value;
+        if (val === 'p') {
+          document.execCommand('formatBlock', false, '<p>');
+        } else {
+          document.execCommand('formatBlock', false, '<' + val + '>');
+        }
+      });
+    }
+
+    // Insert Table Modal Trigger
+    if (btnDocInsertTable) {
+      btnDocInsertTable.addEventListener('click', () => {
+        insertTableModal.classList.remove('hidden');
+      });
+    }
+
+    if (btnCloseTableModal) btnCloseTableModal.addEventListener('click', () => insertTableModal.classList.add('hidden'));
+    if (btnCancelInsertTable) btnCancelInsertTable.addEventListener('click', () => insertTableModal.classList.add('hidden'));
+
+    if (btnConfirmInsertTable) {
+      btnConfirmInsertTable.addEventListener('click', () => {
+        const rows = parseInt(inputTblRows.value, 10) || 3;
+        const cols = parseInt(inputTblCols.value, 10) || 3;
+        insertTableModal.classList.add('hidden');
+
+        let tableHtml = '<div class="w-full my-4 overflow-x-auto"><table class="w-full border-collapse border border-slate-400 text-xs sm:text-sm bg-white shadow-xs">';
+        tableHtml += '<thead><tr class="bg-slate-100 text-slate-800 font-semibold text-center border-b border-slate-400">';
+        for (let c = 0; c < cols; c++) {
+          tableHtml += `<th class="border border-slate-400 p-2">열 ${c + 1}</th>`;
+        }
+        tableHtml += '</tr></thead><tbody>';
+
+        for (let r = 0; r < rows; r++) {
+          tableHtml += '<tr>';
+          for (let c = 0; c < cols; c++) {
+            tableHtml += '<td class="border border-slate-400 p-2">&nbsp;</td>';
+          }
+          tableHtml += '</tr>';
+        }
+        tableHtml += '</tbody></table></div><p><br></p>';
+
+        document.execCommand('insertHTML', false, tableHtml);
+        statusText.textContent = `새 ${rows}×${cols} 표가 본문에 삽입되었습니다.`;
+      });
+    }
+
+    // Document Column Add / Col Delete
+    if (btnDocAddCol) {
+      btnDocAddCol.addEventListener('click', () => {
+        const sel = window.getSelection();
+        let targetCell = null;
+        if (sel.rangeCount > 0) {
+          let node = sel.getRangeAt(0).commonAncestorContainer;
+          while (node && node !== docContent) {
+            if (node.nodeName === 'TD' || node.nodeName === 'TH') {
+              targetCell = node;
+              break;
+            }
+            node = node.parentNode;
+          }
+        }
+        if (!targetCell) {
+          alert('열을 추가할 표의 칸(셀)을 먼저 클릭하세요.');
+          return;
+        }
+
+        const tr = targetCell.closest('tr');
+        const colIdx = Array.from(tr.children).indexOf(targetCell);
+        const table = tr.closest('table');
+
+        table.querySelectorAll('tr').forEach((row, rIdx) => {
+          const cells = Array.from(row.children);
+          const refCell = cells[colIdx];
+          const newCell = document.createElement(row.closest('thead') ? 'th' : 'td');
+          newCell.className = refCell ? refCell.className : 'border border-slate-400 p-2';
+          newCell.innerHTML = row.closest('thead') ? '새 열' : '&nbsp;';
+          if (refCell && refCell.nextSibling) {
+            row.insertBefore(newCell, refCell.nextSibling);
+          } else {
+            row.appendChild(newCell);
+          }
+        });
+        statusText.textContent = '표에 새 열이 추가되었습니다.';
+      });
+    }
+
+    if (btnDocDelCol) {
+      btnDocDelCol.addEventListener('click', () => {
+        const sel = window.getSelection();
+        let targetCell = null;
+        if (sel.rangeCount > 0) {
+          let node = sel.getRangeAt(0).commonAncestorContainer;
+          while (node && node !== docContent) {
+            if (node.nodeName === 'TD' || node.nodeName === 'TH') {
+              targetCell = node;
+              break;
+            }
+            node = node.parentNode;
+          }
+        }
+        if (!targetCell) {
+          alert('삭제할 표의 칸(셀)을 먼저 클릭하세요.');
+          return;
+        }
+
+        const tr = targetCell.closest('tr');
+        const colIdx = Array.from(tr.children).indexOf(targetCell);
+        const table = tr.closest('table');
+        if (tr.children.length <= 1) {
+          alert('표의 마지막 남은 열은 삭제할 수 없습니다.');
+          return;
+        }
+
+        table.querySelectorAll('tr').forEach(row => {
+          if (row.children[colIdx]) {
+            row.removeChild(row.children[colIdx]);
+          }
+        });
+        statusText.textContent = '선택된 열이 삭제되었습니다.';
+      });
+    }
   </script>
 </body>
 </html>
