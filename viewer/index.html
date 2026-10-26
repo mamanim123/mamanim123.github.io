@@ -1,0 +1,1924 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#4f46e5">
+  <title>마마 오피스 뷰어 (Excel / HWPX / HWP / PDF)</title>
+
+  <!-- Dynamic PWA Manifest Injection (Prevents CORS error in file:// protocol) -->
+  <script>
+    if (window.location.protocol.startsWith('http')) {
+      const manifestLink = document.createElement('link');
+      manifestLink.rel = 'manifest';
+      manifestLink.href = './manifest.json';
+      document.head.appendChild(manifestLink);
+    }
+  </script>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & Pretendard -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- SheetJS (Excel & CFB / OLE Container) -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <!-- JSZip (HWPX Container) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <!-- Pako (Zlib Inflate for HWP binary streams) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+  <!-- PDF.js (High-Fidelity PDF Engine) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Pretendard', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'Roboto', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            },
+            excel: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              600: '#059669',
+              800: '#065f46',
+            },
+            hwpx: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              600: '#2563eb',
+              800: '#1e40af',
+            },
+            hwp: {
+              50: '#fdf2f8',
+              100: '#fce7f3',
+              600: '#db2777',
+              800: '#9d174d',
+            },
+            pdf: {
+              50: '#fff1f2',
+              100: '#ffe4e6',
+              600: '#e11d48',
+              800: '#9f1239',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Editable focus */
+    .editable-focus:focus {
+      outline: 2px solid #4f46e5;
+      background-color: #f8fafc;
+    }
+
+    /* Search match highlight */
+    .search-highlight {
+      background-color: #fef08a !important;
+      color: #854d0e !important;
+      border-radius: 2px;
+    }
+
+    /* Print styles */
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white; padding: 0; }
+      #doc-page, #pdf-container { box-shadow: none; border: none; padding: 0; width: 100% !important; max-width: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col antialiased select-none">
+
+  <!-- TOP APP BAR -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm no-print">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
+      <!-- Logo & File Name -->
+      <div class="flex items-center space-x-2 sm:space-x-3 overflow-hidden">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center text-white shadow-md flex-shrink-0">
+          <i data-lucide="layers" class="w-5 h-5"></i>
+        </div>
+        <div class="flex flex-col min-w-0">
+          <div class="flex items-center space-x-2">
+            <span class="font-bold text-sm sm:text-base tracking-tight truncate" id="app-title">마마 오피스 뷰어</span>
+            <span id="file-badge" class="hidden px-2 py-0.5 text-xs font-semibold rounded-full uppercase tracking-wider"></span>
+          </div>
+          <p id="file-name" class="text-xs text-slate-500 truncate hidden">파일이 선택되지 않음</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center space-x-1.5 sm:space-x-2">
+        <!-- Open File Input -->
+        <label for="file-input" class="cursor-pointer inline-flex items-center px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-medium transition active:scale-95">
+          <i data-lucide="folder-open" class="w-4 h-4 mr-1.5 text-slate-600"></i>
+          <span>파일 열기</span>
+        </label>
+        <input type="file" id="file-input" class="hidden" accept=".xlsx,.xls,.csv,.hwpx,.hwp,.pdf" />
+
+        <!-- Edit Mode Toggle -->
+        <button id="btn-toggle-edit" class="hidden inline-flex items-center px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-medium transition active:scale-95 shadow-xs">
+          <i data-lucide="edit-3" class="w-4 h-4 mr-1.5 text-slate-600" id="icon-edit"></i>
+          <span id="txt-edit-mode">편집 모드</span>
+        </button>
+
+        <!-- Save / Download Button -->
+        <button id="btn-download" class="hidden inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-xs sm:text-sm font-medium shadow-sm transition active:scale-95">
+          <i data-lucide="download" class="w-4 h-4 mr-1.5"></i>
+          <span>저장</span>
+        </button>
+
+        <!-- Close Button -->
+        <button id="btn-close" class="hidden p-1.5 sm:p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition" title="문서 닫기">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 flex flex-col max-w-7xl w-full mx-auto p-2 sm:p-4 md:p-6 overflow-hidden">
+
+    <!-- 1. EMPTY / WELCOME STATE -->
+    <div id="welcome-view" class="flex-1 flex flex-col items-center justify-center p-4">
+      <div class="max-w-md w-full bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 sm:p-8 text-center">
+        <!-- Icon -->
+        <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-brand-600 mb-5 shadow-inner">
+          <i data-lucide="file-spreadsheet" class="w-8 h-8 sm:w-10 sm:h-10"></i>
+        </div>
+
+        <h2 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">마마 오피스 뷰어</h2>
+        <p class="text-xs sm:text-sm text-slate-500 mb-6 leading-relaxed">
+          스마트폰과 PC에서 무거운 광고 없이 <br class="hidden sm:inline">
+          <b class="text-emerald-700">엑셀 (.xlsx)</b>, <b class="text-blue-700">한글 (.hwpx)</b>, <b class="text-pink-700">구형 한글 (.hwp)</b>, <b class="text-rose-700">PDF (.pdf)</b>를<br class="hidden sm:inline">
+          빠르고 안전하게 열람 및 편리하게 편집하세요.
+        </p>
+
+        <!-- Drag & Drop Zone -->
+        <div id="drop-zone" class="border-2 border-dashed border-slate-300 hover:border-brand-500 rounded-xl p-6 sm:p-8 bg-slate-50/50 hover:bg-brand-50/30 transition cursor-pointer mb-5">
+          <i data-lucide="upload-cloud" class="w-8 h-8 mx-auto text-slate-400 mb-2"></i>
+          <p class="text-xs sm:text-sm font-semibold text-slate-700">여기를 클릭하거나 파일을 끌어다 놓으세요</p>
+          <p class="text-[11px] text-slate-400 mt-1">지원 형식: .xlsx, .xls, .csv, .hwpx, .hwp, .pdf</p>
+        </div>
+
+        <!-- Quick Test Buttons -->
+        <div class="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-center gap-2">
+          <span class="text-xs text-slate-400 w-full text-center">빠른 테스트:</span>
+          <button id="btn-sample-excel" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs font-medium transition flex items-center">
+            <i data-lucide="table" class="w-3.5 h-3.5 mr-1"></i> 샘플 엑셀
+          </button>
+          <button id="btn-sample-hwpx" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-medium transition flex items-center">
+            <i data-lucide="file-text" class="w-3.5 h-3.5 mr-1"></i> 샘플 HWPX
+          </button>
+        </div>
+
+        <!-- Privacy Notice -->
+        <div class="mt-5 text-[11px] text-slate-400 flex items-center justify-center space-x-1">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-500"></i>
+          <span>파일은 외부 서버로 전송되지 않고 기기 내부에서 100% 안전하게 처리됩니다.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. EXCEL VIEWER & EDITOR -->
+    <div id="excel-view" class="hidden flex-1 flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <!-- Excel Sub Header -->
+      <div class="bg-slate-50 border-b border-slate-200 px-3 py-2 flex flex-wrap items-center justify-between gap-2 no-print">
+        <div id="excel-tabs" class="flex items-center space-x-1 overflow-x-auto max-w-full pb-1 sm:pb-0"></div>
+        <div id="excel-tools" class="flex items-center space-x-1">
+          <button id="btn-add-row" class="px-2.5 py-1 text-xs font-medium rounded bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition flex items-center shadow-xs" title="현재 행 아래에 새 행 삽입">
+            <i data-lucide="plus" class="w-3.5 h-3.5 mr-1 text-emerald-600"></i> 행 추가
+          </button>
+          <button id="btn-del-row" class="px-2.5 py-1 text-xs font-medium rounded bg-white hover:bg-rose-50 text-rose-700 border border-slate-200 transition flex items-center shadow-xs" title="선택된 행 삭제">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5 mr-1 text-rose-500"></i> 행 삭제
+          </button>
+          <button id="btn-add-col" class="px-2.5 py-1 text-xs font-medium rounded bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition flex items-center shadow-xs" title="오른쪽에 새 열 추가">
+            <i data-lucide="plus" class="w-3.5 h-3.5 mr-1 text-blue-600"></i> 열 추가
+          </button>
+          <button id="btn-del-col" class="px-2.5 py-1 text-xs font-medium rounded bg-white hover:bg-rose-50 text-rose-700 border border-slate-200 transition flex items-center shadow-xs" title="선택된 열 삭제">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5 mr-1 text-rose-500"></i> 열 삭제
+          </button>
+          <span class="text-xs text-slate-400 ml-2 font-mono" id="excel-stats">0 행 × 0 열</span>
+        </div>
+      </div>
+
+      <!-- Excel Formula & Quick Tool Bar -->
+      <div id="excel-formula-bar" class="bg-white border-b border-slate-200 px-3 py-1.5 flex items-center space-x-2 text-xs no-print">
+        <div class="px-2.5 py-1 bg-slate-100 border border-slate-300 rounded font-mono font-bold text-slate-700 min-w-[54px] text-center" id="excel-coord-badge">A1</div>
+        <span class="text-slate-400 font-serif italic text-sm font-semibold select-none">fx</span>
+        <input type="text" id="excel-formula-input" class="flex-1 px-3 py-1 text-xs border border-slate-200 rounded-lg focus:border-brand-500 focus:outline-none bg-slate-50 focus:bg-white text-slate-800 transition" placeholder="수식 또는 셀 내용을 입력하세요..." />
+        <button id="btn-comma-fmt" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg border border-slate-300 font-medium transition" title="숫자 1,000 단위 콤마 서식 적용">
+          ,000
+        </button>
+        <!-- Excel Quick Fill Dropdown -->
+        <div class="relative">
+          <button id="btn-excel-quick-fill" class="px-2.5 py-1 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg border border-emerald-200 flex items-center font-medium transition">
+            <i data-lucide="zap" class="w-3.5 h-3.5 mr-1 text-emerald-600"></i> <span>빠른입력</span>
+          </button>
+          <div id="excel-quick-menu" class="hidden absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 text-xs">
+            <button class="w-full text-left px-3 py-1.5 hover:bg-slate-100 text-slate-700 qf-btn flex items-center" data-val="DATE">📅 오늘 날짜</button>
+            <button class="w-full text-left px-3 py-1.5 hover:bg-slate-100 text-slate-700 qf-btn flex items-center" data-val="상태양호">✅ 상태양호</button>
+            <button class="w-full text-left px-3 py-1.5 hover:bg-slate-100 text-slate-700 qf-btn flex items-center" data-val="정상">✅ 정상</button>
+            <button class="w-full text-left px-3 py-1.5 hover:bg-slate-100 text-slate-700 qf-btn flex items-center" data-val="특이사항 없음">🩺 특이사항 없음</button>
+            <button class="w-full text-left px-3 py-1.5 hover:bg-slate-100 text-slate-700 qf-btn flex items-center" data-val="투약 완료">💊 투약 완료</button>
+            <button class="w-full text-left px-3 py-1.5 hover:bg-slate-100 text-slate-700 qf-btn flex items-center" data-val="36.5℃">🌡️ 36.5℃</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Excel Table Container -->
+      <div class="flex-1 overflow-auto bg-slate-100/50 p-2 sm:p-4" id="excel-scroll-area">
+        <div class="inline-block min-w-full bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+          <table id="excel-table" class="border-collapse text-left w-full text-xs sm:text-sm"></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. DOCUMENT (HWPX / HWP) VIEWER & EDITOR -->
+    <div id="doc-view" class="hidden flex-1 flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <!-- Document Sub Toolbar -->
+      <div class="bg-slate-50 border-b border-slate-200 px-3 py-2 flex items-center justify-between text-xs text-slate-600 no-print">
+        <div class="flex items-center space-x-2">
+          <span class="font-semibold text-slate-700 flex items-center" id="doc-title-badge">
+            <i data-lucide="file-text" class="w-4 h-4 mr-1 text-blue-600"></i> 문서 본문
+          </span>
+          <span id="doc-status" class="text-slate-400 text-[11px] font-medium">(읽기 모드)</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button id="btn-zoom-out" class="p-1 rounded hover:bg-slate-200" title="축소"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
+          <span id="txt-zoom" class="text-xs text-slate-500 font-mono w-10 text-center">100%</span>
+          <button id="btn-zoom-in" class="p-1 rounded hover:bg-slate-200" title="확대"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
+          <button onclick="window.print()" class="p-1 rounded hover:bg-slate-200" title="인쇄"><i data-lucide="printer" class="w-4 h-4"></i></button>
+        </div>
+      </div>
+
+      <!-- Document Rich Editor Toolbar (Active when isEditMode = true) -->
+      <div id="doc-editor-toolbar" class="hidden bg-white border-b border-indigo-100 px-3 py-2 flex flex-wrap items-center justify-between gap-2 shadow-xs z-20 no-print">
+        <!-- Left: Text Formatting & Table Controls -->
+        <div class="flex items-center flex-wrap gap-1">
+          <button id="btn-doc-undo" class="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition" title="실행 취소 (Ctrl+Z)"><i data-lucide="undo" class="w-4 h-4"></i></button>
+          <button id="btn-doc-redo" class="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition" title="다시 실행 (Ctrl+Y)"><i data-lucide="redo" class="w-4 h-4"></i></button>
+          
+          <div class="w-px h-4 bg-slate-300 mx-1"></div>
+          
+          <button id="btn-doc-bold" class="p-1.5 text-slate-700 hover:bg-slate-100 rounded-lg transition font-bold" title="굵게 (Ctrl+B)"><i data-lucide="bold" class="w-4 h-4"></i></button>
+          <button id="btn-doc-underline" class="p-1.5 text-slate-700 hover:bg-slate-100 rounded-lg transition" title="밑줄 (Ctrl+U)"><i data-lucide="underline" class="w-4 h-4"></i></button>
+          <button id="btn-doc-hilite" class="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition" title="형광펜"><i data-lucide="highlighter" class="w-4 h-4"></i></button>
+          
+          <div class="w-px h-4 bg-slate-300 mx-1"></div>
+
+          <button id="btn-doc-align-left" class="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition" title="왼쪽 정렬"><i data-lucide="align-left" class="w-4 h-4"></i></button>
+          <button id="btn-doc-align-center" class="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition" title="가운데 정렬"><i data-lucide="align-center" class="w-4 h-4"></i></button>
+          <button id="btn-doc-align-right" class="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition" title="오른쪽 정렬"><i data-lucide="align-right" class="w-4 h-4"></i></button>
+
+          <div class="w-px h-4 bg-slate-300 mx-1"></div>
+
+          <!-- Table Controls -->
+          <button id="btn-doc-add-row" class="px-2.5 py-1 text-xs bg-indigo-50 hover:bg-indigo-100 text-brand-700 font-semibold rounded-lg flex items-center border border-indigo-200 transition" title="현재 표의 선택 행 아래에 새 행 삽입">
+            <i data-lucide="plus-circle" class="w-3.5 h-3.5 mr-1 text-brand-600"></i> 표 행 추가
+          </button>
+          <button id="btn-doc-del-row" class="px-2.5 py-1 text-xs bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold rounded-lg flex items-center border border-rose-200 transition" title="선택된 표 행 삭제">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5 mr-1 text-rose-500"></i> 행 삭제
+          </button>
+        </div>
+
+        <!-- Right: Quick Fill & Search -->
+        <div class="flex items-center space-x-2">
+          <!-- Quick Fill Dropdown -->
+          <div class="relative">
+            <button id="btn-doc-quick-fill" class="px-2.5 py-1 text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 font-medium rounded-lg flex items-center border border-amber-200 transition">
+              <i data-lucide="zap" class="w-3.5 h-3.5 mr-1 text-amber-600"></i> 빠른 문구
+            </button>
+            <div id="doc-quick-menu" class="hidden absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 text-xs">
+              <button class="w-full text-left px-3 py-1.5 hover:bg-slate-100 text-slate-700 doc-qf-btn flex items-center" data-val="DATE">📅 오늘 날짜</button>
+              <button class="w-full text-left px-3 py-1.5 hover:bg-slate-100 text-slate-700 doc-qf-btn flex items-center" data-val="상태양호">✅ 상태양호</button>
+              <button class="w-full text-left px-3 py-1.5 hover:bg-slate-100 text-slate-700 doc-qf-btn flex items-center" data-val="정상">✅ 정상</button>
+              <button class="w-full text-left px-3 py-1.5 hover:bg-slate-100 text-slate-700 doc-qf-btn flex items-center" data-val="특이사항 없음">🩺 특이사항 없음</button>
+              <button class="w-full text-left px-3 py-1.5 hover:bg-slate-100 text-slate-700 doc-qf-btn flex items-center" data-val="투약 완료">💊 투약 완료</button>
+              <button class="w-full text-left px-3 py-1.5 hover:bg-slate-100 text-slate-700 doc-qf-btn flex items-center" data-val="체온 정상 (36.5℃)">🌡️ 체온 정상 (36.5℃)</button>
+              <button class="w-full text-left px-3 py-1.5 hover:bg-slate-100 text-slate-700 doc-qf-btn flex items-center" data-val="식사 양호">🍚 식사 양호</button>
+            </div>
+          </div>
+
+          <!-- Document Search Box -->
+          <div class="flex items-center bg-slate-100 rounded-lg px-2.5 py-1 border border-slate-200 focus-within:border-brand-500 focus-within:bg-white transition">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 mr-1.5"></i>
+            <input type="text" id="input-doc-search" placeholder="단어 찾기..." class="bg-transparent text-xs text-slate-700 outline-none w-24 sm:w-32 py-0.5" />
+            <button id="btn-doc-search-next" class="text-slate-400 hover:text-slate-700 p-0.5 rounded transition" title="다음 찾기"><i data-lucide="chevron-down" class="w-3.5 h-3.5"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Document Page Viewport -->
+      <div class="flex-1 overflow-auto bg-slate-200/70 p-2 sm:p-6 flex justify-center" id="doc-scroll-area">
+        <div id="doc-page" class="w-full max-w-4xl min-h-[900px] bg-white rounded shadow-md border border-slate-300 p-6 sm:p-14 text-slate-900 leading-relaxed transition-all origin-top">
+          <!-- Dynamic Parsed Document Content -->
+          <div id="doc-content" class="outline-none space-y-2"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. PDF VIEWER -->
+    <div id="pdf-view" class="hidden flex-1 flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <!-- PDF Sub Toolbar -->
+      <div class="bg-slate-50 border-b border-slate-200 px-3 py-2 flex items-center justify-between text-xs text-slate-600 no-print">
+        <div class="flex items-center space-x-2">
+          <span class="font-semibold text-slate-700 flex items-center" id="pdf-title-badge">
+            <i data-lucide="file" class="w-4 h-4 mr-1 text-rose-600"></i> PDF 문서 본문
+          </span>
+          <span id="txt-pdf-page-info" class="text-slate-600 font-mono text-[11px] bg-slate-200/80 px-2 py-0.5 rounded font-medium">0 / 0 페이지</span>
+        </div>
+        <div class="flex items-center space-x-1.5 sm:space-x-2">
+          <button id="btn-pdf-prev" class="p-1.5 rounded-lg hover:bg-slate-200 text-slate-700 transition" title="이전 페이지"><i data-lucide="chevron-up" class="w-4 h-4"></i></button>
+          <button id="btn-pdf-next" class="p-1.5 rounded-lg hover:bg-slate-200 text-slate-700 transition" title="다음 페이지"><i data-lucide="chevron-down" class="w-4 h-4"></i></button>
+          <div class="w-px h-4 bg-slate-300 mx-1"></div>
+          <button id="btn-pdf-zoom-out" class="p-1 rounded-lg hover:bg-slate-200 text-slate-700 transition" title="축소"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
+          <span id="txt-pdf-zoom" class="text-xs text-slate-600 font-mono w-10 text-center font-medium">120%</span>
+          <button id="btn-pdf-zoom-in" class="p-1 rounded-lg hover:bg-slate-200 text-slate-700 transition" title="확대"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
+          <button onclick="window.print()" class="p-1 rounded-lg hover:bg-slate-200 text-slate-700 transition" title="인쇄"><i data-lucide="printer" class="w-4 h-4"></i></button>
+        </div>
+      </div>
+
+      <!-- PDF Continuous Scroll Viewport -->
+      <div class="flex-1 overflow-auto bg-slate-200/70 p-2 sm:p-6 flex justify-center" id="pdf-scroll-area">
+        <div id="pdf-container" class="w-full max-w-4xl flex flex-col items-center">
+          <!-- Canvas pages are rendered here -->
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- SMART SAVE MODAL -->
+  <div id="save-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-100 transform transition-all animate-in fade-in zoom-in-95">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-base font-bold text-slate-900 flex items-center">
+          <i data-lucide="download-cloud" class="w-5 h-5 mr-2 text-brand-600"></i> 문서 저장 및 내보내기
+        </h3>
+        <button id="btn-close-save-modal" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <p class="text-xs text-slate-500 mb-5">원하시는 저장 및 내보내기 형식을 선택하세요:</p>
+      
+      <div class="space-y-3">
+        <!-- Option 1: HWPX -->
+        <button id="modal-btn-save-hwpx" class="w-full p-3.5 rounded-xl border border-blue-200 hover:border-blue-400 bg-blue-50/30 hover:bg-blue-50/80 transition flex items-center justify-between text-left group">
+          <div class="flex items-center space-x-3.5">
+            <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">HWPX</div>
+            <div>
+              <div class="text-xs font-bold text-slate-800">최신 한글 (.hwpx)로 저장</div>
+              <div class="text-[11px] text-slate-500">한컴오피스 2024, 모바일 한글 완벽 호환</div>
+            </div>
+          </div>
+          <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition"></i>
+        </button>
+
+        <!-- Option 2: Excel Export -->
+        <button id="modal-btn-save-excel" class="w-full p-3.5 rounded-xl border border-emerald-200 hover:border-emerald-400 bg-emerald-50/30 hover:bg-emerald-50/80 transition flex items-center justify-between text-left group">
+          <div class="flex items-center space-x-3.5">
+            <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">XLSX</div>
+            <div>
+              <div class="text-xs font-bold text-slate-800">엑셀 (.xlsx) 표 데이터 내보내기</div>
+              <div class="text-[11px] text-slate-500">문서 내의 표를 엑셀 시트로 즉시 변환 다운로드</div>
+            </div>
+          </div>
+          <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition"></i>
+        </button>
+
+        <!-- Option 3: Print / PDF -->
+        <button id="modal-btn-print" class="w-full p-3.5 rounded-xl border border-slate-200 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-100/80 transition flex items-center justify-between text-left group">
+          <div class="flex items-center space-x-3.5">
+            <div class="w-10 h-10 rounded-xl bg-slate-700 text-white flex items-center justify-center shadow-sm"><i data-lucide="printer" class="w-5 h-5"></i></div>
+            <div>
+              <div class="text-xs font-bold text-slate-800">인쇄 / PDF로 저장</div>
+              <div class="text-[11px] text-slate-500">브라우저 인쇄 기능을 통해 PDF 파일로 바로 출력</div>
+            </div>
+          </div>
+          <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400 group-hover:text-slate-700 group-hover:translate-x-0.5 transition"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER STATUS BAR -->
+  <footer class="bg-white border-t border-slate-200 py-1.5 px-4 text-xs text-slate-400 flex items-center justify-between no-print">
+    <div class="flex items-center space-x-2">
+      <span class="inline-block w-2 h-2 rounded-full bg-emerald-500" id="status-indicator"></span>
+      <span id="status-text">준비 완료 (오프라인 로컬 엔진)</span>
+    </div>
+    <div class="hidden sm:block">
+      <span>터치 & 클릭으로 셀/텍스트를 바로 편집할 수 있습니다.</span>
+    </div>
+  </footer>
+
+  <!-- JAVASCRIPT APPLICATION LOGIC -->
+  <script>
+    // PDF.js Worker Configuration
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    // Global State
+    let currentFileType = null; // 'excel' | 'hwpx' | 'hwp' | 'pdf'
+    let currentFileName = '';
+    let isEditMode = false;
+    let docZoom = 1.0;
+
+    // Excel State
+    let workbook = null;
+    let currentSheetName = '';
+    let currentSheetData = [];
+    let selectedExcelRow = 0;
+    let selectedExcelCol = 0;
+
+    // HWPX State
+    let originalHwpxZip = null;
+    let hwpxSections = [];
+    let hwpxStyles = { charPrMap: {}, paraPrMap: {}, borderFillMap: {} };
+
+    // PDF State
+    let currentPdfDoc = null;
+    let currentPdfPageNum = 1;
+    let totalPdfPages = 0;
+    let pdfZoom = 1.2;
+    let currentPdfFileBlob = null;
+
+    // Search State
+    let currentSearchMatchIndex = -1;
+    let searchMatches = [];
+
+    // DOM Elements
+    const fileInput = document.getElementById('file-input');
+    const dropZone = document.getElementById('drop-zone');
+    const welcomeView = document.getElementById('welcome-view');
+    const excelView = document.getElementById('excel-view');
+    const docView = document.getElementById('doc-view');
+    const pdfView = document.getElementById('pdf-view');
+    const fileBadge = document.getElementById('file-badge');
+    const fileNameEl = document.getElementById('file-name');
+    const btnToggleEdit = document.getElementById('btn-toggle-edit');
+    const txtEditMode = document.getElementById('txt-edit-mode');
+    const btnDownload = document.getElementById('btn-download');
+    const btnClose = document.getElementById('btn-close');
+    const statusText = document.getElementById('status-text');
+
+    // Excel DOM
+    const excelTabs = document.getElementById('excel-tabs');
+    const excelTable = document.getElementById('excel-table');
+    const btnAddRow = document.getElementById('btn-add-row');
+    const btnDelRow = document.getElementById('btn-del-row');
+    const btnAddCol = document.getElementById('btn-add-col');
+    const btnDelCol = document.getElementById('btn-del-col');
+    const excelStats = document.getElementById('excel-stats');
+    const excelCoordBadge = document.getElementById('excel-coord-badge');
+    const excelFormulaInput = document.getElementById('excel-formula-input');
+    const btnCommaFmt = document.getElementById('btn-comma-fmt');
+    const btnExcelQuickFill = document.getElementById('btn-excel-quick-fill');
+    const excelQuickMenu = document.getElementById('excel-quick-menu');
+
+    // Document DOM
+    const docContent = document.getElementById('doc-content');
+    const docPage = document.getElementById('doc-page');
+    const docTitleBadge = document.getElementById('doc-title-badge');
+    const docStatus = document.getElementById('doc-status');
+    const txtZoom = document.getElementById('txt-zoom');
+    const docEditorToolbar = document.getElementById('doc-editor-toolbar');
+    const btnDocAddRow = document.getElementById('btn-doc-add-row');
+    const btnDocDelRow = document.getElementById('btn-doc-del-row');
+    const btnDocQuickFill = document.getElementById('btn-doc-quick-fill');
+    const docQuickMenu = document.getElementById('doc-quick-menu');
+    const inputDocSearch = document.getElementById('input-doc-search');
+    const btnDocSearchNext = document.getElementById('btn-doc-search-next');
+
+    // PDF DOM
+    const pdfContainer = document.getElementById('pdf-container');
+    const txtPdfPageInfo = document.getElementById('txt-pdf-page-info');
+    const btnPdfPrev = document.getElementById('btn-pdf-prev');
+    const btnPdfNext = document.getElementById('btn-pdf-next');
+    const btnPdfZoomIn = document.getElementById('btn-pdf-zoom-in');
+    const btnPdfZoomOut = document.getElementById('btn-pdf-zoom-out');
+    const txtPdfZoom = document.getElementById('txt-pdf-zoom');
+
+    // Save Modal DOM
+    const saveModal = document.getElementById('save-modal');
+    const btnCloseSaveModal = document.getElementById('btn-close-save-modal');
+    const modalBtnSaveHwpx = document.getElementById('modal-btn-save-hwpx');
+    const modalBtnSaveExcel = document.getElementById('modal-btn-save-excel');
+    const modalBtnPrint = document.getElementById('modal-btn-print');
+
+    // Initialize Lucide Icons
+    function updateIcons() {
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    }
+    updateIcons();
+
+    // --------------------------------------------------------------------------
+    // File Router & Drop Handling
+    // --------------------------------------------------------------------------
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) handleFile(file);
+    });
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-brand-500', 'bg-brand-50/50');
+    });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('border-brand-500', 'bg-brand-50/50');
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-brand-500', 'bg-brand-50/50');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    btnClose.addEventListener('click', resetView);
+
+    function resetView() {
+      currentFileType = null;
+      currentFileName = '';
+      workbook = null;
+      currentSheetData = [];
+      originalHwpxZip = null;
+      hwpxSections = [];
+      currentPdfDoc = null;
+      currentPdfFileBlob = null;
+      isEditMode = false;
+      docZoom = 1.0;
+      pdfZoom = 1.2;
+      docPage.style.transform = 'scale(1)';
+      txtZoom.textContent = '100%';
+      txtPdfZoom.textContent = '120%';
+
+      welcomeView.classList.remove('hidden');
+      excelView.classList.add('hidden');
+      docView.classList.add('hidden');
+      pdfView.classList.add('hidden');
+      btnClose.classList.add('hidden');
+      btnToggleEdit.classList.add('hidden');
+      btnDownload.classList.add('hidden');
+      fileBadge.classList.add('hidden');
+      fileNameEl.classList.add('hidden');
+      docEditorToolbar.classList.add('hidden');
+      saveModal.classList.add('hidden');
+
+      txtEditMode.textContent = '편집 모드';
+      btnToggleEdit.classList.remove('bg-amber-50', 'text-amber-700', 'border-amber-300');
+      btnToggleEdit.classList.add('bg-white', 'text-slate-700');
+
+      fileInput.value = '';
+      statusText.textContent = '준비 완료 (오프라인 로컬 엔진)';
+      updateIcons();
+    }
+
+    function handleFile(file) {
+      const name = file.name;
+      const ext = name.split('.').pop().toLowerCase();
+      statusText.textContent = `${name} 파일 로딩 중...`;
+
+      if (['xlsx', 'xls', 'csv'].includes(ext)) {
+        loadExcelFile(file);
+      } else if (ext === 'hwpx') {
+        loadHwpxFile(file);
+      } else if (ext === 'hwp') {
+        loadHwpBinaryFile(file);
+      } else if (ext === 'pdf') {
+        loadPdfFile(file);
+      } else {
+        alert('지원되지 않는 파일 형식입니다: ' + ext);
+        resetView();
+      }
+    }
+
+    // --------------------------------------------------------------------------
+    // Edit Mode Toggle
+    // --------------------------------------------------------------------------
+    btnToggleEdit.addEventListener('click', () => {
+      isEditMode = !isEditMode;
+      applyEditMode();
+    });
+
+    function applyEditMode() {
+      if (isEditMode) {
+        txtEditMode.textContent = '편집 중';
+        btnToggleEdit.classList.remove('bg-white', 'text-slate-700');
+        btnToggleEdit.classList.add('bg-amber-50', 'text-amber-700', 'border-amber-300');
+        statusText.textContent = '편집 모드 활성화: 원하는 셀이나 텍스트를 클릭하여 수정하세요.';
+      } else {
+        txtEditMode.textContent = '편집 모드';
+        btnToggleEdit.classList.remove('bg-amber-50', 'text-amber-700', 'border-amber-300');
+        btnToggleEdit.classList.add('bg-white', 'text-slate-700');
+        statusText.textContent = '읽기 모드';
+      }
+
+      if (currentFileType === 'excel') {
+        renderExcelTable();
+      } else if (currentFileType === 'hwpx' || currentFileType === 'hwp') {
+        docContent.setAttribute('contenteditable', isEditMode ? 'true' : 'false');
+        docStatus.textContent = isEditMode ? '(편집 가능 모드)' : '(읽기 모드)';
+        if (isEditMode) {
+          docEditorToolbar.classList.remove('hidden');
+        } else {
+          docEditorToolbar.classList.add('hidden');
+        }
+      }
+      updateIcons();
+    }
+
+    function setupHeader(type, name) {
+      currentFileType = type;
+      currentFileName = name;
+      welcomeView.classList.add('hidden');
+      btnClose.classList.remove('hidden');
+      fileBadge.classList.remove('hidden');
+      fileNameEl.classList.remove('hidden');
+      fileNameEl.textContent = name;
+      btnDownload.classList.remove('hidden');
+
+      if (type === 'excel') {
+        fileBadge.textContent = 'EXCEL';
+        fileBadge.className = 'px-2 py-0.5 text-xs font-semibold rounded-full uppercase tracking-wider bg-emerald-100 text-emerald-800';
+        excelView.classList.remove('hidden');
+        docView.classList.add('hidden');
+        pdfView.classList.add('hidden');
+        btnToggleEdit.classList.remove('hidden');
+        docEditorToolbar.classList.add('hidden');
+      } else if (type === 'hwpx') {
+        fileBadge.textContent = 'HWPX';
+        fileBadge.className = 'px-2 py-0.5 text-xs font-semibold rounded-full uppercase tracking-wider bg-blue-100 text-blue-800';
+        docTitleBadge.innerHTML = `<i data-lucide="file-text" class="w-4 h-4 mr-1 text-blue-600"></i> HWPX 문서 본문`;
+        excelView.classList.add('hidden');
+        docView.classList.remove('hidden');
+        pdfView.classList.add('hidden');
+        btnToggleEdit.classList.remove('hidden');
+      } else if (type === 'hwp') {
+        fileBadge.textContent = 'HWP 5.0';
+        fileBadge.className = 'px-2 py-0.5 text-xs font-semibold rounded-full uppercase tracking-wider bg-pink-100 text-pink-800';
+        docTitleBadge.innerHTML = `<i data-lucide="file-text" class="w-4 h-4 mr-1 text-pink-600"></i> HWP 바이너리 본문`;
+        excelView.classList.add('hidden');
+        docView.classList.remove('hidden');
+        pdfView.classList.add('hidden');
+        btnToggleEdit.classList.remove('hidden');
+      } else if (type === 'pdf') {
+        fileBadge.textContent = 'PDF';
+        fileBadge.className = 'px-2 py-0.5 text-xs font-semibold rounded-full uppercase tracking-wider bg-rose-100 text-rose-800';
+        excelView.classList.add('hidden');
+        docView.classList.add('hidden');
+        pdfView.classList.remove('hidden');
+        btnToggleEdit.classList.add('hidden'); // PDF is high-fidelity viewer
+      }
+      updateIcons();
+    }
+
+    // --------------------------------------------------------------------------
+    // 1. EXCEL MODULE
+    // --------------------------------------------------------------------------
+    function loadExcelFile(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          workbook = XLSX.read(data, { type: 'array' });
+          setupHeader('excel', file.name);
+          buildExcelTabs();
+          switchExcelSheet(workbook.SheetNames[0]);
+          statusText.textContent = `${file.name} 로드 완료 (${workbook.SheetNames.length}개 시트)`;
+        } catch (err) {
+          alert('엑셀 파일을 읽는 중 오류가 발생했습니다: ' + err.message);
+          resetView();
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function buildExcelTabs() {
+      excelTabs.innerHTML = '';
+      workbook.SheetNames.forEach((sheetName, idx) => {
+        const btn = document.createElement('button');
+        btn.textContent = sheetName;
+        btn.className = `px-3 py-1.5 text-xs font-medium rounded-lg transition whitespace-nowrap ${
+          idx === 0
+            ? 'bg-emerald-600 text-white shadow-xs'
+            : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
+        }`;
+        btn.addEventListener('click', () => switchExcelSheet(sheetName));
+        excelTabs.appendChild(btn);
+      });
+    }
+
+    function switchExcelSheet(sheetName) {
+      currentSheetName = sheetName;
+      Array.from(excelTabs.children).forEach((tab) => {
+        if (tab.textContent === sheetName) {
+          tab.className = 'px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-600 text-white shadow-xs whitespace-nowrap';
+        } else {
+          tab.className = 'px-3 py-1.5 text-xs font-medium rounded-lg bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap';
+        }
+      });
+
+      const worksheet = workbook.Sheets[sheetName];
+      currentSheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+      selectedExcelRow = 0;
+      selectedExcelCol = 0;
+      renderExcelTable();
+      updateExcelFormulaBar();
+    }
+
+    function renderExcelTable() {
+      excelTable.innerHTML = '';
+      if (!currentSheetData || currentSheetData.length === 0) {
+        excelStats.textContent = '0 행 × 0 열';
+        return;
+      }
+
+      let maxCols = 0;
+      currentSheetData.forEach(row => { if (row.length > maxCols) maxCols = row.length; });
+      maxCols = Math.max(maxCols, 1);
+      excelStats.textContent = `${currentSheetData.length} 행 × ${maxCols} 열`;
+
+      // Header row (A, B, C...)
+      const thead = document.createElement('thead');
+      const headerTr = document.createElement('tr');
+      headerTr.className = 'bg-slate-100 text-slate-600 sticky top-0 z-10 select-none';
+
+      const cornerTh = document.createElement('th');
+      cornerTh.className = 'border border-slate-300 p-2 w-12 text-center text-[11px] font-mono bg-slate-200 text-slate-500';
+      cornerTh.textContent = '#';
+      headerTr.appendChild(cornerTh);
+
+      for (let c = 0; c < maxCols; c++) {
+        const th = document.createElement('th');
+        th.className = 'border border-slate-300 p-2 min-w-[90px] text-center text-xs font-semibold text-slate-700 bg-slate-100';
+        th.textContent = getExcelColumnLabel(c);
+        headerTr.appendChild(th);
+      }
+      thead.appendChild(headerTr);
+      excelTable.appendChild(thead);
+
+      // Body rows
+      const tbody = document.createElement('tbody');
+      currentSheetData.forEach((row, rIdx) => {
+        const tr = document.createElement('tr');
+        tr.className = rIdx % 2 === 0 ? 'bg-white hover:bg-slate-50/80' : 'bg-slate-50/40 hover:bg-slate-50';
+
+        // Row Index
+        const rowNumTd = document.createElement('td');
+        rowNumTd.className = 'border border-slate-300 p-1.5 text-center text-[11px] font-mono text-slate-400 bg-slate-50 select-none font-medium';
+        rowNumTd.textContent = rIdx + 1;
+        tr.appendChild(rowNumTd);
+
+        // Cells
+        for (let cIdx = 0; cIdx < maxCols; cIdx++) {
+          const td = document.createElement('td');
+          td.className = 'border border-slate-300 p-2 text-slate-800 text-xs sm:text-sm select-text outline-none';
+          const val = row[cIdx] !== undefined ? row[cIdx] : '';
+          td.textContent = val;
+
+          if (isEditMode) {
+            td.setAttribute('contenteditable', 'true');
+            td.classList.add('editable-focus');
+            td.addEventListener('input', () => {
+              while (currentSheetData[rIdx].length <= cIdx) currentSheetData[rIdx].push('');
+              currentSheetData[rIdx][cIdx] = td.textContent;
+              if (selectedExcelRow === rIdx && selectedExcelCol === cIdx) {
+                excelFormulaInput.value = td.textContent;
+              }
+            });
+          }
+
+          td.addEventListener('click', () => {
+            selectedExcelRow = rIdx;
+            selectedExcelCol = cIdx;
+            updateExcelFormulaBar();
+            excelTable.querySelectorAll('td.ring-2').forEach(el => el.classList.remove('ring-2', 'ring-emerald-500'));
+            td.classList.add('ring-2', 'ring-emerald-500');
+          });
+
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      });
+      excelTable.appendChild(tbody);
+    }
+
+    function getExcelColumnLabel(colIndex) {
+      let label = '';
+      let num = colIndex;
+      while (num >= 0) {
+        label = String.fromCharCode((num % 26) + 65) + label;
+        num = Math.floor(num / 26) - 1;
+      }
+      return label;
+    }
+
+    function updateExcelFormulaBar() {
+      const colLabel = getExcelColumnLabel(selectedExcelCol);
+      excelCoordBadge.textContent = `${colLabel}${selectedExcelRow + 1}`;
+      const val = (currentSheetData[selectedExcelRow] && currentSheetData[selectedExcelRow][selectedExcelCol]) || '';
+      excelFormulaInput.value = val;
+    }
+
+    excelFormulaInput.addEventListener('input', () => {
+      if (!currentSheetData) return;
+      while (currentSheetData.length <= selectedExcelRow) currentSheetData.push([]);
+      while (currentSheetData[selectedExcelRow].length <= selectedExcelCol) currentSheetData[selectedExcelRow].push('');
+      currentSheetData[selectedExcelRow][selectedExcelCol] = excelFormulaInput.value;
+
+      const rows = excelTable.querySelectorAll('tbody tr');
+      if (rows[selectedExcelRow]) {
+        const cell = rows[selectedExcelRow].children[selectedExcelCol + 1];
+        if (cell) cell.textContent = excelFormulaInput.value;
+      }
+    });
+
+    // Excel Add / Delete Row
+    btnAddRow.addEventListener('click', () => {
+      if (!currentSheetData) return;
+      const colCount = currentSheetData[0] ? currentSheetData[0].length : 5;
+      const newRow = new Array(colCount).fill('');
+      const insertIdx = Math.min(selectedExcelRow + 1, currentSheetData.length);
+      const prevVal = parseInt(currentSheetData[selectedExcelRow]?.[0], 10);
+      if (!isNaN(prevVal)) newRow[0] = prevVal + 1;
+
+      currentSheetData.splice(insertIdx, 0, newRow);
+      selectedExcelRow = insertIdx;
+      renderExcelTable();
+      updateExcelFormulaBar();
+      statusText.textContent = `${insertIdx + 1}번째 행 추가 완료`;
+    });
+
+    btnDelRow.addEventListener('click', () => {
+      if (!currentSheetData || currentSheetData.length <= 1) {
+        alert('마지막 남은 행은 삭제할 수 없습니다.');
+        return;
+      }
+      currentSheetData.splice(selectedExcelRow, 1);
+      if (selectedExcelRow >= currentSheetData.length) selectedExcelRow = currentSheetData.length - 1;
+      renderExcelTable();
+      updateExcelFormulaBar();
+      statusText.textContent = `행 삭제 완료`;
+    });
+
+    // Excel Add / Delete Column
+    btnAddCol.addEventListener('click', () => {
+      if (!currentSheetData) return;
+      const insertCol = selectedExcelCol + 1;
+      currentSheetData.forEach(row => row.splice(insertCol, 0, ''));
+      selectedExcelCol = insertCol;
+      renderExcelTable();
+      updateExcelFormulaBar();
+      statusText.textContent = `${getExcelColumnLabel(insertCol)} 열 추가 완료`;
+    });
+
+    btnDelCol.addEventListener('click', () => {
+      if (!currentSheetData || currentSheetData[0]?.length <= 1) {
+        alert('마지막 남은 열은 삭제할 수 없습니다.');
+        return;
+      }
+      currentSheetData.forEach(row => row.splice(selectedExcelCol, 1));
+      if (selectedExcelCol >= currentSheetData[0].length) selectedExcelCol = currentSheetData[0].length - 1;
+      renderExcelTable();
+      updateExcelFormulaBar();
+      statusText.textContent = `열 삭제 완료`;
+    });
+
+    // Excel Comma Format
+    btnCommaFmt.addEventListener('click', () => {
+      if (!currentSheetData) return;
+      const raw = currentSheetData[selectedExcelRow]?.[selectedExcelCol];
+      const num = parseFloat(String(raw).replace(/,/g, ''));
+      if (!isNaN(num)) {
+        const formatted = num.toLocaleString('ko-KR');
+        currentSheetData[selectedExcelRow][selectedExcelCol] = formatted;
+        excelFormulaInput.value = formatted;
+        renderExcelTable();
+        statusText.textContent = `숫자 콤마 서식 적용: ${formatted}`;
+      } else {
+        alert('선택한 셀의 내용이 숫자가 아닙니다.');
+      }
+    });
+
+    // Excel Quick Fill Dropdown
+    btnExcelQuickFill.addEventListener('click', (e) => {
+      e.stopPropagation();
+      excelQuickMenu.classList.toggle('hidden');
+    });
+
+    document.querySelectorAll('.qf-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        let val = btn.getAttribute('data-val');
+        if (val === 'DATE') {
+          const d = new Date();
+          val = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+        }
+        if (currentSheetData) {
+          while (currentSheetData.length <= selectedExcelRow) currentSheetData.push([]);
+          while (currentSheetData[selectedExcelRow].length <= selectedExcelCol) currentSheetData[selectedExcelRow].push('');
+          currentSheetData[selectedExcelRow][selectedExcelCol] = val;
+          excelFormulaInput.value = val;
+          renderExcelTable();
+        }
+        excelQuickMenu.classList.add('hidden');
+        statusText.textContent = `셀 빠른 입력 완료: ${val}`;
+      });
+    });
+
+    document.addEventListener('click', () => {
+      excelQuickMenu.classList.add('hidden');
+      docQuickMenu.classList.add('hidden');
+    });
+
+    function saveExcelFile() {
+      try {
+        const newWorksheet = XLSX.utils.aoa_to_sheet(currentSheetData);
+        workbook.Sheets[currentSheetName] = newWorksheet;
+        const saveName = currentFileName.replace(/\.[^/.]+$/, "") + "_수정.xlsx";
+        XLSX.writeFile(workbook, saveName);
+        statusText.textContent = `${saveName} 저장 완료!`;
+      } catch (err) {
+        alert('엑셀 저장 중 오류가 발생했습니다: ' + err.message);
+      }
+    }
+
+    // --------------------------------------------------------------------------
+    // 2. HWPX MODULE
+    // --------------------------------------------------------------------------
+    async function loadHwpxFile(file) {
+      statusText.textContent = 'HWPX 표준 패키지 구조 분석 중...';
+      try {
+        const zip = new JSZip();
+        originalHwpxZip = await zip.loadAsync(file);
+
+        hwpxStyles = { charPrMap: {}, paraPrMap: {}, borderFillMap: {} };
+        const headerFile = originalHwpxZip.file('Contents/header.xml');
+        if (headerFile) {
+          const headerXmlText = await headerFile.async('text');
+          parseHwpxHeaderStyles(headerXmlText);
+        }
+
+        const sectionPaths = [];
+        originalHwpxZip.forEach((relPath) => {
+          if (relPath.startsWith('Contents/section') && relPath.endsWith('.xml')) {
+            sectionPaths.push(relPath);
+          }
+        });
+        sectionPaths.sort();
+
+        if (sectionPaths.length === 0) {
+          throw new Error('HWPX 본문 내용(section XML)을 찾을 수 없습니다.');
+        }
+
+        hwpxSections = [];
+        const parser = new DOMParser();
+        for (const secPath of sectionPaths) {
+          const xmlText = await originalHwpxZip.file(secPath).async('text');
+          const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+          hwpxSections.push({ path: secPath, doc: xmlDoc });
+        }
+
+        setupHeader('hwpx', file.name);
+        renderHwpxDocument();
+        statusText.textContent = `HWPX 문서 렌더링 완료 (${sectionPaths.length}개 구역)`;
+      } catch (err) {
+        alert('HWPX 파일을 처리하는 중 오류가 발생했습니다: ' + err.message);
+        resetView();
+      }
+    }
+
+    function parseHwpxHeaderStyles(xmlText) {
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(xmlText, 'text/xml');
+
+        doc.querySelectorAll('charPr').forEach((node) => {
+          const id = node.getAttribute('id');
+          if (!id) return;
+          const bold = node.getAttribute('bold') === '1' || node.getAttribute('bold') === 'true';
+          const italic = node.getAttribute('italic') === '1' || node.getAttribute('italic') === 'true';
+          const underline = node.getAttribute('underline') && node.getAttribute('underline') !== 'none';
+          const textColor = node.getAttribute('textColor') || '#000000';
+          const height = parseInt(node.getAttribute('height') || '1000', 10);
+          hwpxStyles.charPrMap[id] = { bold, italic, underline, textColor, fontSizePt: height / 100 };
+        });
+
+        doc.querySelectorAll('paraPr').forEach((node) => {
+          const id = node.getAttribute('id');
+          if (!id) return;
+          const align = node.getAttribute('align') || 'left';
+          hwpxStyles.paraPrMap[id] = { align };
+        });
+      } catch (e) {
+        console.warn('HWPX 스타일 파싱 경고:', e);
+      }
+    }
+
+    function renderHwpxDocument() {
+      docContent.innerHTML = '';
+
+      hwpxSections.forEach((sec) => {
+        const xmlDoc = sec.doc;
+        const secNodes = xmlDoc.querySelectorAll('sec');
+        const rootContainer = secNodes.length > 0 ? secNodes[0] : xmlDoc.documentElement;
+
+        Array.from(rootContainer.children).forEach((childNode) => {
+          const nodeName = childNode.localName || childNode.nodeName.split(':').pop();
+          if (nodeName === 'p') {
+            renderHwpxParagraphNode(childNode, docContent);
+          }
+        });
+      });
+
+      applyEditMode();
+    }
+
+    function renderHwpxParagraphNode(pNode, container) {
+      let tblNode = null;
+      for (const child of Array.from(pNode.children)) {
+        const cName = child.localName || child.nodeName.split(':').pop();
+        if (cName === 'tbl') {
+          tblNode = child;
+          break;
+        }
+        if (cName === 'run') {
+          for (const grandChild of Array.from(child.children)) {
+            const gName = grandChild.localName || grandChild.nodeName.split(':').pop();
+            if (gName === 'tbl') {
+              tblNode = grandChild;
+              break;
+            }
+          }
+          if (tblNode) break;
+        }
+      }
+
+      if (tblNode) {
+        renderHwpxTable(tblNode, container);
+        return;
+      }
+
+      const pElem = document.createElement('p');
+      pElem.className = 'text-slate-800 leading-relaxed text-sm sm:text-base select-text break-words';
+
+      const paraPrID = pNode.getAttribute('paraPrID');
+      if (paraPrID && hwpxStyles.paraPrMap[paraPrID]) {
+        const align = hwpxStyles.paraPrMap[paraPrID].align;
+        if (align === 'center') pElem.classList.add('text-center');
+        else if (align === 'right') pElem.classList.add('text-right');
+      }
+
+      let hasRuns = false;
+      const runs = pNode.querySelectorAll('run');
+      runs.forEach((run) => {
+        let insideTable = false;
+        let pCheck = run.parentNode;
+        while (pCheck && pCheck !== pNode) {
+          const pName = pCheck.localName || pCheck.nodeName.split(':').pop();
+          if (pName === 'tbl') {
+            insideTable = true;
+            break;
+          }
+          pCheck = pCheck.parentNode;
+        }
+        if (insideTable) return;
+
+        const tNode = run.querySelector('t');
+        if (tNode && tNode.textContent) {
+          hasRuns = true;
+          const span = document.createElement('span');
+          span.textContent = tNode.textContent;
+          const charPrID = run.getAttribute('charPrID');
+          if (charPrID && hwpxStyles.charPrMap[charPrID]) {
+            const style = hwpxStyles.charPrMap[charPrID];
+            if (style.bold) span.classList.add('font-bold');
+            if (style.italic) span.classList.add('italic');
+            if (style.underline) span.classList.add('underline');
+            if (style.textColor && style.textColor !== '#000000') span.style.color = style.textColor;
+          }
+          pElem.appendChild(span);
+        }
+      });
+
+      if (!hasRuns || !pElem.textContent.trim()) {
+        pElem.innerHTML = '&nbsp;';
+      }
+      container.appendChild(pElem);
+    }
+
+    function renderHwpxTable(tblNode, container) {
+      const tableWrapper = document.createElement('div');
+      tableWrapper.className = 'w-full my-4 overflow-x-auto';
+
+      const table = document.createElement('table');
+      table.className = 'w-full border-collapse border border-slate-400 text-xs sm:text-sm select-text bg-white shadow-sm';
+
+      const trNodes = tblNode.querySelectorAll('tr');
+      trNodes.forEach((trNode, rIdx) => {
+        const trElem = document.createElement('tr');
+        trElem.className = 'border-b border-slate-300';
+
+        const tcNodes = trNode.querySelectorAll('tc');
+        tcNodes.forEach((tcNode) => {
+          let directParentTr = tcNode.parentNode;
+          while (directParentTr && (directParentTr.localName || directParentTr.nodeName.split(':').pop()) !== 'tr') {
+            directParentTr = directParentTr.parentNode;
+          }
+          if (directParentTr !== trNode) return;
+
+          const tdElem = document.createElement('td');
+          tdElem.className = 'border border-slate-400 p-2 align-middle text-slate-800 break-words whitespace-pre-line';
+
+          const colSpan = tcNode.getAttribute('colSpan');
+          const rowSpan = tcNode.getAttribute('rowSpan');
+          if (colSpan && parseInt(colSpan, 10) > 1) tdElem.colSpan = parseInt(colSpan, 10);
+          if (rowSpan && parseInt(rowSpan, 10) > 1) tdElem.rowSpan = parseInt(rowSpan, 10);
+
+          let cellHasContent = false;
+          const cellPs = tcNode.querySelectorAll('p');
+          cellPs.forEach((p) => {
+            const tNodes = p.querySelectorAll('t');
+            tNodes.forEach((t) => {
+              if (t.textContent) {
+                cellHasContent = true;
+                const span = document.createElement('span');
+                span.textContent = t.textContent;
+                tdElem.appendChild(span);
+              }
+            });
+          });
+
+          if (!cellHasContent) {
+            tdElem.innerHTML = '&nbsp;';
+          }
+          trElem.appendChild(tdElem);
+        });
+
+        table.appendChild(trElem);
+      });
+
+      tableWrapper.appendChild(table);
+      container.appendChild(tableWrapper);
+    }
+
+    async function saveHwpxFile() {
+      try {
+        statusText.textContent = '수정된 HWPX 문서를 패키징하는 중...';
+        const pElems = docContent.querySelectorAll('p');
+        const firstSection = hwpxSections[0];
+
+        if (firstSection && pElems.length > 0) {
+          const xmlDoc = firstSection.doc;
+          const pNodes = xmlDoc.querySelectorAll('p');
+          pElems.forEach((pElem, idx) => {
+            if (pNodes[idx]) {
+              const tNode = pNodes[idx].querySelector('t');
+              if (tNode && pElem.textContent.trim()) {
+                tNode.textContent = pElem.textContent;
+              }
+            }
+          });
+
+          const serializer = new XMLSerializer();
+          const updatedXml = serializer.serializeToString(xmlDoc);
+          originalHwpxZip.file(firstSection.path, updatedXml);
+        }
+
+        const blob = await originalHwpxZip.generateAsync({
+          type: 'blob',
+          mimeType: 'application/x-hwp+zip'
+        });
+
+        const saveName = currentFileName.replace(/\.[^/.]+$/, "") + "_수정.hwpx";
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = saveName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        statusText.textContent = `${saveName} 저장 완료!`;
+      } catch (err) {
+        alert('HWPX 저장 중 오류가 발생했습니다: ' + err.message);
+      }
+    }
+
+    // --------------------------------------------------------------------------
+    // 3. HWP 5.0 MODULE (정밀 디코더 & 절대 그리드 엔진 탑재)
+    // --------------------------------------------------------------------------
+    function loadHwpBinaryFile(file) {
+      statusText.textContent = 'HWP 5.0 바이너리 컨테이너 분석 중...';
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const cfb = XLSX.CFB.read(data, { type: 'array' });
+
+          let isHwp5 = false;
+          let secEntries = [];
+
+          cfb.FileIndex.forEach((entry) => {
+            if (entry.name === 'FileHeader') isHwp5 = true;
+            if (entry.name.includes('Section') || entry.name.startsWith('BodyText/Section')) {
+              secEntries.push(entry);
+            }
+          });
+
+          if (!isHwp5 && secEntries.length === 0) {
+            throw new Error('올바른 한글 5.0 바이너리 형식이 아닙니다.');
+          }
+
+          secEntries.sort((a, b) => a.name.localeCompare(b.name));
+          setupHeader('hwp', file.name);
+          parseHwp5Binary(secEntries);
+          statusText.textContent = `HWP 바이너리 본문 및 정밀 표 렌더링 완료`;
+        } catch (err) {
+          alert('HWP 파일 처리 중 오류가 발생했습니다: ' + err.message);
+          resetView();
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function parseHwp5Binary(secEntries) {
+      docContent.innerHTML = '';
+
+      secEntries.forEach((sec) => {
+        if (!sec.content || sec.content.length === 0) return;
+
+        let raw = null;
+        try {
+          raw = pako.inflateRaw(new Uint8Array(sec.content));
+        } catch (e1) {
+          try {
+            raw = pako.inflate(new Uint8Array(sec.content));
+          } catch (e2) {
+            raw = new Uint8Array(sec.content);
+          }
+        }
+
+        const view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
+        let offset = 0;
+        const records = [];
+
+        while (offset < raw.length) {
+          if (offset + 4 > raw.length) break;
+          const header = view.getUint32(offset, true);
+          offset += 4;
+          const tagId = header & 0x3FF;
+          const level = (header >> 10) & 0x3FF;
+          let size = (header >> 20) & 0xFFF;
+          if (size === 0xFFF) {
+            if (offset + 4 > raw.length) break;
+            size = view.getUint32(offset, true);
+            offset += 4;
+          }
+          const data = raw.subarray(offset, offset + size);
+          offset += size;
+          records.push({ tagId, level, size, data });
+        }
+
+        let currentTable = null;
+        let currentCell = null;
+
+        for (let i = 0; i < records.length; i++) {
+          const r = records[i];
+
+          if (r.tagId === 77 && r.data.length >= 8) {
+            if (currentTable) {
+              appendHwpGridTableToDOM(currentTable);
+            }
+            const dView = new DataView(r.data.buffer, r.data.byteOffset, r.data.byteLength);
+            const rowCnt = dView.getUint16(4, true);
+            const colCnt = dView.getUint16(6, true);
+            currentTable = {
+              rowCnt: rowCnt,
+              colCnt: colCnt,
+              rowsMap: {}
+            };
+            currentCell = null;
+            continue;
+          }
+
+          if (currentTable) {
+            if (r.tagId === 72 && r.data.length >= 16) {
+              const dView = new DataView(r.data.buffer, r.data.byteOffset, r.data.byteLength);
+              const colAddr = dView.getUint16(8, true);
+              const rowAddr = dView.getUint16(10, true);
+              const colSpan = dView.getUint16(12, true);
+              const rowSpan = dView.getUint16(14, true);
+
+              currentCell = {
+                colAddr: colAddr,
+                rowAddr: rowAddr,
+                colSpan: colSpan,
+                rowSpan: rowSpan,
+                texts: []
+              };
+
+              if (!currentTable.rowsMap[rowAddr]) {
+                currentTable.rowsMap[rowAddr] = [];
+              }
+              currentTable.rowsMap[rowAddr].push(currentCell);
+              continue;
+            }
+
+            if (r.tagId === 67 && currentCell) {
+              let text = decodeHwpParaText(r.data);
+              if (text) {
+                currentCell.texts.push(text);
+              }
+              continue;
+            }
+          } else {
+            if (r.tagId === 67 && r.level <= 1) {
+              let text = decodeHwpParaText(r.data);
+              if (text) {
+                const p = document.createElement('p');
+                p.className = 'text-slate-800 leading-relaxed text-sm sm:text-base select-text break-words';
+                if (text.startsWith('-') || text.includes('몸무게') || text.includes('투약') || text.includes('점검표') || text.includes('건강체크')) {
+                  p.className = 'text-slate-900 font-bold text-center text-lg sm:text-xl my-4 tracking-wider';
+                }
+                p.textContent = text;
+                docContent.appendChild(p);
+              }
+            }
+          }
+        }
+
+        if (currentTable) {
+          appendHwpGridTableToDOM(currentTable);
+          currentTable = null;
+        }
+      });
+
+      applyEditMode();
+    }
+
+    function decodeHwpParaText(uint8Array) {
+      if (!uint8Array || uint8Array.length < 2) return '';
+      const view = new DataView(uint8Array.buffer, uint8Array.byteOffset, uint8Array.byteLength);
+      let parsedChars = [];
+      let i = 0;
+      while (i < uint8Array.byteLength) {
+        if (i + 1 >= uint8Array.byteLength) break;
+        const code = view.getUint16(i, true);
+        if ((code >= 1 && code <= 3) || (code >= 11 && code <= 23)) {
+          i += 16;
+          continue;
+        }
+        if (code === 9) {
+          parsedChars.push(' ');
+          i += 2;
+          continue;
+        }
+        if (code === 10 || code === 13) {
+          parsedChars.push('\n');
+          i += 2;
+          continue;
+        }
+        if (code === 24) {
+          parsedChars.push('-');
+          i += 2;
+          continue;
+        }
+        if (code === 25 || code === 26) {
+          parsedChars.push(' ');
+          i += 2;
+          continue;
+        }
+        if (code < 32) {
+          i += 2;
+          continue;
+        }
+        parsedChars.push(String.fromCharCode(code));
+        i += 2;
+      }
+      return parsedChars.join('').replace(/[ \t]+/g, ' ').replace(/\n{2,}/g, '\n').trim();
+    }
+
+    function appendHwpGridTableToDOM(tableData) {
+      const rowsMap = tableData.rowsMap;
+      const rowIndices = Object.keys(rowsMap).map(Number).sort((a, b) => a - b);
+      if (rowIndices.length === 0) return;
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'w-full my-4 overflow-x-auto';
+
+      const table = document.createElement('table');
+      table.className = 'w-full border-collapse border border-slate-400 text-xs sm:text-sm select-text bg-white shadow-sm';
+
+      rowIndices.forEach((rowIdx) => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-slate-300';
+
+        const cells = rowsMap[rowIdx].sort((a, b) => a.colAddr - b.colAddr);
+        cells.forEach((cell) => {
+          const td = document.createElement('td');
+          td.className = 'border border-slate-400 p-2 align-middle text-slate-800 break-words whitespace-pre-line';
+
+          if (cell.colSpan > 1) td.colSpan = cell.colSpan;
+          if (cell.rowSpan > 1) td.rowSpan = cell.rowSpan;
+
+          if (rowIdx === 0 || rowIdx === 1 && (cell.texts.join('').includes('월') || cell.texts.join('').includes('성명'))) {
+            td.className = 'border border-slate-400 p-2 align-middle text-slate-900 font-semibold bg-slate-100 text-center whitespace-pre-line';
+          } else {
+            const content = cell.texts.join(' ');
+            if (cell.colAddr === 0 || cell.colAddr === 1 && content.length <= 4 || cell.colAddr >= 2 && content.length <= 5) {
+              td.classList.add('text-center');
+            }
+          }
+
+          const cellContent = cell.texts.join(' ');
+          td.textContent = cellContent || '\u00A0';
+          tr.appendChild(td);
+        });
+
+        table.appendChild(tr);
+      });
+
+      wrapper.appendChild(table);
+      docContent.appendChild(wrapper);
+    }
+
+    // --------------------------------------------------------------------------
+    // 4. RICH DOCUMENT EDITOR TOOLBAR LOGIC
+    // --------------------------------------------------------------------------
+    document.getElementById('btn-doc-undo').addEventListener('click', () => document.execCommand('undo'));
+    document.getElementById('btn-doc-redo').addEventListener('click', () => document.execCommand('redo'));
+    document.getElementById('btn-doc-bold').addEventListener('click', () => document.execCommand('bold'));
+    document.getElementById('btn-doc-underline').addEventListener('click', () => document.execCommand('underline'));
+    document.getElementById('btn-doc-hilite').addEventListener('click', () => document.execCommand('hiliteColor', false, '#fef08a'));
+    document.getElementById('btn-doc-align-left').addEventListener('click', () => document.execCommand('justifyLeft'));
+    document.getElementById('btn-doc-align-center').addEventListener('click', () => document.execCommand('justifyCenter'));
+    document.getElementById('btn-doc-align-right').addEventListener('click', () => document.execCommand('justifyRight'));
+
+    // Document Table Row Add
+    btnDocAddRow.addEventListener('click', () => {
+      const selection = window.getSelection();
+      let targetRow = null;
+      if (selection.rangeCount > 0) {
+        let node = selection.getRangeAt(0).commonAncestorContainer;
+        while (node && node !== docContent) {
+          if (node.nodeName === 'TR') {
+            targetRow = node;
+            break;
+          }
+          node = node.parentNode;
+        }
+      }
+
+      if (!targetRow) {
+        const tables = docContent.querySelectorAll('table');
+        if (tables.length > 0) {
+          const rows = tables[0].querySelectorAll('tr');
+          targetRow = rows[rows.length - 1];
+        }
+      }
+
+      if (!targetRow) {
+        alert('행을 추가할 표의 줄이나 셀을 먼저 클릭하세요.');
+        return;
+      }
+
+      const cloneRow = targetRow.cloneNode(true);
+      const tds = cloneRow.querySelectorAll('td, th');
+      tds.forEach((td, idx) => {
+        td.removeAttribute('rowspan');
+        td.textContent = '\u00A0';
+        if (idx === 0) {
+          const prevNum = parseInt(targetRow.children[0].textContent.trim(), 10);
+          if (!isNaN(prevNum)) td.textContent = String(prevNum + 1);
+        }
+      });
+
+      targetRow.parentNode.insertBefore(cloneRow, targetRow.nextSibling);
+      const firstCell = cloneRow.querySelector('td');
+      if (firstCell) firstCell.focus();
+      statusText.textContent = '새로운 표 행이 성공적으로 추가되었습니다.';
+    });
+
+    // Document Table Row Delete
+    btnDocDelRow.addEventListener('click', () => {
+      const selection = window.getSelection();
+      let targetRow = null;
+      if (selection.rangeCount > 0) {
+        let node = selection.getRangeAt(0).commonAncestorContainer;
+        while (node && node !== docContent) {
+          if (node.nodeName === 'TR') {
+            targetRow = node;
+            break;
+          }
+          node = node.parentNode;
+        }
+      }
+
+      if (!targetRow) {
+        alert('삭제할 표의 줄이나 셀을 먼저 클릭하세요.');
+        return;
+      }
+
+      const table = targetRow.closest('table');
+      if (table && table.querySelectorAll('tr').length <= 1) {
+        alert('표의 마지막 남은 행은 삭제할 수 없습니다.');
+        return;
+      }
+
+      targetRow.parentNode.removeChild(targetRow);
+      statusText.textContent = '선택한 표 행이 삭제되었습니다.';
+    });
+
+    // Document Quick Fill
+    btnDocQuickFill.addEventListener('click', (e) => {
+      e.stopPropagation();
+      docQuickMenu.classList.toggle('hidden');
+    });
+
+    document.querySelectorAll('.doc-qf-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        let val = btn.getAttribute('data-val');
+        if (val === 'DATE') {
+          const d = new Date();
+          val = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+        }
+        document.execCommand('insertText', false, val);
+        docQuickMenu.classList.add('hidden');
+        statusText.textContent = `빠른 문구 입력: ${val}`;
+      });
+    });
+
+    // Document Word Search & Highlight
+    inputDocSearch.addEventListener('input', () => {
+      const query = inputDocSearch.value.trim().toLowerCase();
+      clearDocSearchHighlights();
+      if (!query) return;
+
+      searchMatches = [];
+      const walker = document.createTreeWalker(docContent, NodeFilter.SHOW_TEXT, null, false);
+      let n;
+      while (n = walker.nextNode()) {
+        if (n.nodeValue.toLowerCase().includes(query)) {
+          searchMatches.push(n.parentElement);
+        }
+      }
+
+      if (searchMatches.length > 0) {
+        currentSearchMatchIndex = 0;
+        focusSearchMatch(0);
+        statusText.textContent = `검색 결과: ${searchMatches.length}개 발견`;
+      } else {
+        statusText.textContent = '일치하는 내용이 없습니다.';
+      }
+    });
+
+    btnDocSearchNext.addEventListener('click', () => {
+      if (searchMatches.length === 0) return;
+      currentSearchMatchIndex = (currentSearchMatchIndex + 1) % searchMatches.length;
+      focusSearchMatch(currentSearchMatchIndex);
+    });
+
+    function focusSearchMatch(idx) {
+      clearDocSearchHighlights();
+      const el = searchMatches[idx];
+      if (el) {
+        el.classList.add('search-highlight');
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    function clearDocSearchHighlights() {
+      docContent.querySelectorAll('.search-highlight').forEach(el => el.classList.remove('search-highlight'));
+    }
+
+    // --------------------------------------------------------------------------
+    // 5. PDF VIEWER MODULE
+    // --------------------------------------------------------------------------
+    function loadPdfFile(file) {
+      statusText.textContent = `${file.name} PDF 고화질 렌더링 중...`;
+      currentPdfFileBlob = file;
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const typedarray = new Uint8Array(e.target.result);
+          const loadingTask = pdfjsLib.getDocument({ data: typedarray });
+          currentPdfDoc = await loadingTask.promise;
+          currentPdfPageNum = 1;
+          totalPdfPages = currentPdfDoc.numPages;
+          setupHeader('pdf', file.name);
+          await renderPdfAllPages();
+          statusText.textContent = `PDF 로드 완료 (총 ${totalPdfPages} 페이지)`;
+        } catch (err) {
+          alert('PDF 파일을 여는 중 오류가 발생했습니다: ' + err.message);
+          resetView();
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    async function renderPdfAllPages() {
+      pdfContainer.innerHTML = '';
+      txtPdfPageInfo.textContent = `${currentPdfPageNum} / ${totalPdfPages} 페이지`;
+
+      for (let pageNum = 1; pageNum <= totalPdfPages; pageNum++) {
+        const page = await currentPdfDoc.getPage(pageNum);
+        const viewport = page.getViewport({ scale: pdfZoom });
+
+        const pageWrapper = document.createElement('div');
+        pageWrapper.className = 'my-4 bg-white shadow-md border border-slate-300 rounded overflow-hidden flex flex-col items-center relative';
+        pageWrapper.setAttribute('data-page-num', pageNum);
+
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        canvas.style.maxWidth = '100%';
+        canvas.style.height = 'auto';
+
+        const pageBadge = document.createElement('div');
+        pageBadge.className = 'text-[11px] font-mono text-slate-400 py-1 bg-slate-50 w-full text-center border-b border-slate-100 select-none';
+        pageBadge.textContent = `${pageNum} / ${totalPdfPages}`;
+
+        pageWrapper.appendChild(pageBadge);
+        pageWrapper.appendChild(canvas);
+        pdfContainer.appendChild(pageWrapper);
+
+        const renderContext = {
+          canvasContext: context,
+          viewport: viewport
+        };
+        await page.render(renderContext).promise;
+      }
+      updateIcons();
+    }
+
+    function scrollToPdfPage(num) {
+      const target = pdfContainer.querySelector(`[data-page-num="${num}"]`);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        txtPdfPageInfo.textContent = `${num} / ${totalPdfPages} 페이지`;
+      }
+    }
+
+    btnPdfPrev.addEventListener('click', () => {
+      if (currentPdfPageNum > 1) {
+        currentPdfPageNum--;
+        scrollToPdfPage(currentPdfPageNum);
+      }
+    });
+
+    btnPdfNext.addEventListener('click', () => {
+      if (currentPdfPageNum < totalPdfPages) {
+        currentPdfPageNum++;
+        scrollToPdfPage(currentPdfPageNum);
+      }
+    });
+
+    btnPdfZoomIn.addEventListener('click', async () => {
+      pdfZoom = Math.min(pdfZoom + 0.2, 2.5);
+      txtPdfZoom.textContent = `${Math.round(pdfZoom * 100)}%`;
+      if (currentPdfDoc) await renderPdfAllPages();
+    });
+
+    btnPdfZoomOut.addEventListener('click', async () => {
+      pdfZoom = Math.max(pdfZoom - 0.2, 0.6);
+      txtPdfZoom.textContent = `${Math.round(pdfZoom * 100)}%`;
+      if (currentPdfDoc) await renderPdfAllPages();
+    });
+
+    // --------------------------------------------------------------------------
+    // 6. SMART SAVE MODAL & EXPORT LOGIC
+    // --------------------------------------------------------------------------
+    btnDownload.addEventListener('click', () => {
+      if (currentFileType === 'excel') {
+        saveExcelFile();
+      } else if (currentFileType === 'pdf') {
+        if (currentPdfFileBlob) {
+          const url = URL.createObjectURL(currentPdfFileBlob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = currentFileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          statusText.textContent = `${currentFileName} 다운로드 완료!`;
+        } else {
+          window.print();
+        }
+      } else {
+        saveModal.classList.remove('hidden');
+      }
+    });
+
+    btnCloseSaveModal.addEventListener('click', () => saveModal.classList.add('hidden'));
+
+    modalBtnSaveHwpx.addEventListener('click', async () => {
+      saveModal.classList.add('hidden');
+      if (currentFileType === 'hwpx' && originalHwpxZip) {
+        await saveHwpxFile();
+      } else {
+        await exportCurrentDocToHwpx();
+      }
+    });
+
+    modalBtnSaveExcel.addEventListener('click', () => {
+      saveModal.classList.add('hidden');
+      exportCurrentDocTableToExcel();
+    });
+
+    modalBtnPrint.addEventListener('click', () => {
+      saveModal.classList.add('hidden');
+      window.print();
+    });
+
+    // Export DOM Table to Excel XLSX
+    function exportCurrentDocTableToExcel() {
+      const tables = docContent.querySelectorAll('table');
+      if (tables.length === 0) {
+        alert('문서 내에 엑셀로 내보낼 표가 없습니다.');
+        return;
+      }
+      try {
+        const wb = XLSX.utils.book_new();
+        tables.forEach((tbl, idx) => {
+          const ws = XLSX.utils.table_to_sheet(tbl);
+          XLSX.utils.book_append_sheet(wb, ws, `표_${idx + 1}`);
+        });
+        const saveName = currentFileName.replace(/\.[^/.]+$/, "") + "_표데이터.xlsx";
+        XLSX.writeFile(wb, saveName);
+        statusText.textContent = `${saveName} 엑셀 내보내기 완료!`;
+      } catch (e) {
+        alert('엑셀 내보내기 오류: ' + e.message);
+      }
+    }
+
+    // Export DOM Document to Modern HWPX
+    async function exportCurrentDocToHwpx() {
+      try {
+        statusText.textContent = '최신 HWPX 문서 패키징 중...';
+        const zip = new JSZip();
+        zip.file('mimetype', 'application/hwp+zip', { compression: 'STORE' });
+        zip.file('version.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><hh:version xmlns:hh="http://www.hancom.co.kr/hwpml/2011/head" version="1.0" major="5" minor="0" build="0"/>');
+        zip.file('META-INF/container.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><ocf:container xmlns:ocf="urn:oasis:names:tc:opendocument:xmlns:container"><ocf:rootfiles><ocf:rootfile ocf:full-path="Contents/content.hpf" ocf:media-type="application/hwp+zip"/></ocf:rootfiles></ocf:container>');
+        zip.file('Contents/content.hpf', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><package xmlns="http://www.idpf.org/2007/opf" unique-identifier="uid" version="2.0"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>' + (currentFileName || '문서') + '</dc:title></metadata><manifest><item id="header" href="header.xml" media-type="application/xml"/><item id="section0" href="section0.xml" media-type="application/xml"/></manifest><spine><itemref idref="header"/><itemref idref="section0"/></spine></package>');
+        zip.file('Contents/header.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><hh:head xmlns:hh="http://www.hancom.co.kr/hwpml/2011/head" version="1.0"><hh:beginNum page="1" footnote="1" endnote="1" pic="1" tbl="1" equation="1"/><hh:refList><hh:fontfaces><hh:fontface lang="ko" fontCnt="1"><hh:font name="맑은 고딕" type="ttf"/></hh:fontface></hh:fontfaces></hh:refList></hh:head>');
+
+        let secBody = '';
+        const childNodes = docContent.children;
+        for (let el of childNodes) {
+          if (el.tagName === 'P') {
+            const text = el.textContent.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            secBody += `<hp:p><hp:run><hp:t>${text}</hp:t></hp:run></hp:p>`;
+          } else if (el.tagName === 'DIV' && el.querySelector('table')) {
+            const tbl = el.querySelector('table');
+            const trs = tbl.querySelectorAll('tr');
+            secBody += `<hp:p><hp:run><hp:tbl rowCnt="${trs.length}" colCnt="${trs[0]?.children.length || 1}">`;
+            trs.forEach(tr => {
+              secBody += '<hp:tr>';
+              tr.querySelectorAll('td, th').forEach(td => {
+                const cellText = td.textContent.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const cSpan = td.colSpan || 1;
+                const rSpan = td.rowSpan || 1;
+                secBody += `<hp:tc colSpan="${cSpan}" rowSpan="${rSpan}"><hp:subList><hp:p><hp:run><hp:t>${cellText}</hp:t></hp:run></hp:p></hp:subList></hp:tc>`;
+              });
+              secBody += '</hp:tr>';
+            });
+            secBody += '</hp:tbl></hp:run></hp:p>';
+          }
+        }
+
+        if (!secBody) {
+          secBody = '<hp:p><hp:run><hp:t></hp:t></hp:run></hp:p>';
+        }
+
+        const secXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><hs:sec xmlns:hs="http://www.hancom.co.kr/hwpml/2011/section" xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph">${secBody}</hs:sec>`;
+        zip.file('Contents/section0.xml', secXml);
+
+        const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/x-hwp+zip' });
+        const saveName = currentFileName.replace(/\.[^/.]+$/, "") + "_변환.hwpx";
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = saveName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        statusText.textContent = `${saveName} HWPX 저장 완료!`;
+      } catch(e) {
+        alert('HWPX 변환 저장 중 오류: ' + e.message);
+      }
+    }
+
+    // --------------------------------------------------------------------------
+    // Document Zoom Controls
+    // --------------------------------------------------------------------------
+    document.getElementById('btn-zoom-in').addEventListener('click', () => {
+      docZoom = Math.min(docZoom + 0.1, 1.8);
+      docPage.style.transform = `scale(${docZoom})`;
+      txtZoom.textContent = `${Math.round(docZoom * 100)}%`;
+    });
+    document.getElementById('btn-zoom-out').addEventListener('click', () => {
+      docZoom = Math.max(docZoom - 0.1, 0.6);
+      docPage.style.transform = `scale(${docZoom})`;
+      txtZoom.textContent = `${Math.round(docZoom * 100)}%`;
+    });
+
+    // --------------------------------------------------------------------------
+    // Quick Samples
+    // --------------------------------------------------------------------------
+    document.getElementById('btn-sample-excel').addEventListener('click', () => {
+      const ws_data = [
+        ["연번", "성명", "생년월일", "체온(℃)", "혈압(mmHg)", "건강상태", "비고"],
+        [1, "강후신", "1938.04.12", "36.5", "120/80", "상태양호", "피부질환으로 가려움"],
+        [2, "김갑례", "1940.11.05", "36.4", "130/85", "상태양호", ""],
+        [3, "김수녀", "1935.08.20", "36.6", "115/75", "기침 증상", "겉옷 필히 착용"],
+        [4, "김옥희", "1942.02.14", "36.5", "125/80", "상태양호", "식사 양호"],
+        [5, "두경용", "1939.06.30", "36.8", "135/88", "설사 증상", "지사제 복용 완료"]
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(ws_data);
+      workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, ws, "일일건강체크표");
+      setupHeader('excel', '샘플_일일건강체크표.xlsx');
+      buildExcelTabs();
+      switchExcelSheet("일일건강체크표");
+      statusText.textContent = '샘플 엑셀 파일 로드 완료';
+    });
+
+    document.getElementById('btn-sample-hwpx').addEventListener('click', () => {
+      docContent.innerHTML = `
+        <p class="text-slate-900 font-bold text-center text-xl my-4 tracking-wider">어르신 일일 건강체크 관리대장</p>
+        <p class="text-right text-xs text-slate-500 mb-2">작성일자: 2026년 10월 26일</p>
+        <div class="w-full my-4 overflow-x-auto">
+          <table class="w-full border-collapse border border-slate-400 text-xs sm:text-sm select-text bg-white shadow-sm">
+            <thead>
+              <tr class="bg-slate-100 text-slate-900 font-semibold text-center border-b border-slate-400">
+                <th class="border border-slate-400 p-2 w-16">연번</th>
+                <th class="border border-slate-400 p-2 w-28">성명</th>
+                <th class="border border-slate-400 p-2">건강 및 투약 상태</th>
+                <th class="border border-slate-400 p-2 w-32">비고</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-slate-300">
+                <td class="border border-slate-400 p-2 text-center">1</td>
+                <td class="border border-slate-400 p-2 text-center font-medium">강후신</td>
+                <td class="border border-slate-400 p-2">상태양호 (피부질환으로 로션 도포)</td>
+                <td class="border border-slate-400 p-2 text-center">특이사항 없음</td>
+              </tr>
+              <tr class="border-b border-slate-300">
+                <td class="border border-slate-400 p-2 text-center">2</td>
+                <td class="border border-slate-400 p-2 text-center font-medium">김갑례</td>
+                <td class="border border-slate-400 p-2">상태양호, 식사 1공기 모두 드심</td>
+                <td class="border border-slate-400 p-2 text-center">정상</td>
+              </tr>
+              <tr class="border-b border-slate-300">
+                <td class="border border-slate-400 p-2 text-center">3</td>
+                <td class="border border-slate-400 p-2 text-center font-medium">두경용</td>
+                <td class="border border-slate-400 p-2">설사 증세로 지사제 투약 및 수분 섭취 권장</td>
+                <td class="border border-slate-400 p-2 text-center text-amber-600 font-medium">관찰 요망</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+      setupHeader('hwpx', '샘플_건강체크대장.hwpx');
+      statusText.textContent = '샘플 한글(HWPX) 문서 로드 완료';
+      applyEditMode();
+    });
+  </script>
+</body>
+</html>

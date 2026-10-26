@@ -1,0 +1,16 @@
+{
+  "name": "마마 오피스 뷰어",
+  "short_name": "오피스뷰어",
+  "description": "광고 없는 엑셀(.xlsx), 한글(.hwp/.hwpx), PDF 통합 뷰어 & 심플 에디터",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234f46e5'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='white'>📄</text></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
