@@ -1,7 +1,7 @@
 /* sw.js - 마마 오피스 서비스워커 */
-const CACHE = 'mama-v2';
+const CACHE = 'mama-v3';
 const CORE = ['./', './index.html', './manifest.json', './mama-ext.js', './mama-fix.js',
-  './mama-rhwp.js', './mama-svgid.js', './mama-mode.js', './mama-excel.js', './vendor/exceljs/exceljs.min.js', './vendor/rhwp/rhwp.js', './vendor/rhwp/rhwp_bg.wasm'];
+  './mama-rhwp.js', './mama-svgid.js', './mama-mode.js', './mama-excel.js', './mama-tohwp.js', './mama-home.js', './logo.png?v=2', './vendor/exceljs/exceljs.min.js', './vendor/rhwp/rhwp.js', './vendor/rhwp/rhwp_bg.wasm'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => Promise.all(CORE.map(u => c.add(u).catch(() => {})))));
   self.skipWaiting();
