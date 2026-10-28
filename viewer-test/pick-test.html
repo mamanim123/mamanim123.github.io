@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>파일 선택 시험</title>
+<style>body{font:15px sans-serif;margin:12px}label{display:block;margin:10px 0;padding:12px;border:2px dashed #888;border-radius:10px}
+input{display:block;margin-top:6px}#log{white-space:pre-wrap;background:#111;color:#7CFC00;font:12px monospace;padding:8px;min-height:200px;border-radius:8px}</style>
+</head><body>
+<h3>파일 선택 시험 (마마 코드 없음)</h3>
+<label>A. 제한 없음<input type="file" data-n="A"></label>
+<label>B. .hwp,.hwpx<input type="file" data-n="B" accept=".hwp,.hwpx"></label>
+<label>C. */*<input type="file" data-n="C" accept="*/*"></label>
+<label>D. MIME 목록<input type="file" data-n="D" accept="application/x-hwp,application/haansofthwp,application/vnd.hancom.hwp,application/vnd.hancom.hwpx,application/octet-stream"></label>
+<div id="log"></div>
+<script>
+var L = document.getElementById('log'), picking = null;
+function log(s) { L.textContent += new Date().toTimeString().slice(0, 8) + ' ' + s + '\n'; }
+log(navigator.userAgent);
+document.querySelectorAll('input').forEach(function (i) {
+  i.addEventListener('click', function () { i.value = ''; picking = i.dataset.n; log('[' + i.dataset.n + '] 선택창 열림'); });
+  i.addEventListener('change', async function () {
+    picking = null;
+    var f = i.files[0];
+    if (!f) { log('[' + i.dataset.n + '] change 발생, 파일 없음'); return; }
+    log('[' + i.dataset.n + '] 받음: ' + f.name + ' / ' + f.size + 'B / type=' + (f.type || '(없음)'));
+    try {
+      var b = new Uint8Array(await f.slice(0, 4).arrayBuffer());
+      log('    앞 4바이트: ' + Array.from(b).map(function (x) { return x.toString(16).toUpperCase().padStart(2, '0'); }).join(' ') + '  (hwp=D0 CF 11 E0, hwpx=50 4B 03 04)');
+    } catch (e) { log('    읽기 실패: ' + e.name + ' ' + e.message); }
+  });
+});
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'visible' && picking) {
+    var n = picking;
+    setTimeout(function () { if (picking === n) { log('[' + n + '] 선택창 닫힘 → 넘어온 파일 없음'); picking = null; } }, 1500);
+  }
+});
+</script></body></html>
