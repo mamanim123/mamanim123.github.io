@@ -1,6 +1,23 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<script>
+/* mama-guard: file:// 로 열리면 서버 주소로 이동 */
+(function () {
+  if (location.protocol !== 'file:') return;
+  var target = 'http://127.0.0.1:4444/index.html';
+  fetch('http://127.0.0.1:4444/ping', { mode: 'no-cors', cache: 'no-store' })
+    .then(function () { location.replace(target); })
+    .catch(function () {
+      document.addEventListener('DOMContentLoaded', function () {
+        var d = document.createElement('div');
+        d.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999999;padding:10px;background:#dc2626;color:#fff;font:600 14px sans-serif;text-align:center';
+        d.textContent = '서버가 꺼져 있습니다. start-mama.cmd 를 실행하세요. (파일로 직접 열면 PDF 변환·한글 연동이 동작하지 않습니다)';
+        document.body.appendChild(d);
+      });
+    });
+})();
+</script>
   <meta charset="UTF-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
@@ -119,6 +136,17 @@
       border-radius: 2px;
     }
 
+    #doc-page.hwpx-page {
+      width: 793.7px;
+      max-width: none;
+      min-height: 1122.5px;
+      padding: 37.8px 56.7px;
+      flex: none;
+      line-height: normal;
+    }
+    #doc-page.hwpx-page #doc-content > * + * { margin-top: 0; }
+    #doc-page.hwpx-page table { font-size: inherit; }
+
     /* Print styles */
     @media print {
       .no-print { display: none !important; }
@@ -126,6 +154,8 @@
       #doc-page, #pdf-container { box-shadow: none; border: none; padding: 0; width: 100% !important; max-width: none !important; }
     }
   </style>
+<link rel="manifest" href="./manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col antialiased select-none">
 
@@ -332,6 +362,7 @@
           <span id="doc-status" class="text-slate-400 text-[11px] font-medium flex-shrink-0">(읽기)</span>
         </div>
         <div class="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+          <button id="btn-native-hwpx-open" class="hidden px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-[11px] sm:text-xs font-medium shadow-xs transition flex items-center" title="설치된 한글 2024에서 열어 전문 편집 (저장 시 자동 동기화)"><i data-lucide="edit-3" class="w-3.5 h-3.5 mr-1"></i> 한글 원본 편집</button>
           <button id="btn-zoom-out" class="p-1 rounded hover:bg-slate-200" title="축소"><i data-lucide="zoom-out" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i></button>
           <span id="txt-zoom" class="text-xs text-slate-500 font-mono w-8 sm:w-10 text-center">100%</span>
           <button id="btn-zoom-in" class="p-1 rounded hover:bg-slate-200" title="확대"><i data-lucide="zoom-in" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i></button>
@@ -396,7 +427,7 @@
         <div class="flex items-center flex-shrink-0 space-x-1">
           <!-- Insert New Table Button -->
           <button id="btn-doc-insert-table" class="px-2 py-1 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold rounded-lg flex items-center border border-emerald-200 transition" title="본문에 새 표 삽입">
-            <i data-lucide="grid-plus" class="w-3.5 h-3.5 mr-1 text-emerald-600"></i> 표 삽입
+            <i data-lucide="grid-2x2-plus" class="w-3.5 h-3.5 mr-1 text-emerald-600"></i> 표 삽입
           </button>
 
           <!-- Table Row Add/Del -->
@@ -581,6 +612,7 @@
     // Global State
     let currentFileType = null; // 'excel' | 'hwpx' | 'hwp' | 'pdf'
     let currentFileName = '';
+    let currentSourceFile = null;
     let isEditMode = false;
     let docZoom = 1.0;
 
@@ -643,6 +675,7 @@
     const docStatus = document.getElementById('doc-status');
     const txtZoom = document.getElementById('txt-zoom');
     const docEditorToolbar = document.getElementById('doc-editor-toolbar');
+    const btnNativeHwpxOpen = document.getElementById('btn-native-hwpx-open');
     const btnDocAddRow = document.getElementById('btn-doc-add-row');
     const btnDocDelRow = document.getElementById('btn-doc-del-row');
     const btnDocQuickFill = document.getElementById('btn-doc-quick-fill');
@@ -732,11 +765,55 @@
       btnToggleEdit.classList.add('bg-white', 'text-slate-700');
 
       fileInput.value = '';
+      currentSourceFile = null;
       statusText.textContent = '준비 완료 (오프라인 로컬 엔진)';
       updateIcons();
     }
 
+    // ===== [MAMA] 한글 엔진 원본 조판 PDF / hwp 변환 =====
+    window.__mamaPdfFromFile = async function (file) {
+      if (!file) { alert("파일이 없습니다."); return; }
+      try {
+        statusText.textContent = "한글 엔진으로 원본 조판 PDF 생성 중... (약 10초)";
+        const res = await fetch("/convert-pdf?name=" + encodeURIComponent(file.name), {
+          method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: await file.arrayBuffer()
+        });
+        if (!res.ok) {
+          let d = ""; try { const j = await res.json(); d = JSON.stringify(j.detail || j); } catch (e) {}
+          statusText.textContent = "PDF 생성 실패 HTTP " + res.status;
+          alert("PDF 생성 실패 (HTTP " + res.status + ")\n" + d);
+          return;
+        }
+        const blob = await res.blob();
+        const pages = res.headers.get("X-Page-Count") || "?";
+        const f = new File([blob], file.name.replace(/\.[^.]+$/, "") + ".pdf", { type: "application/pdf" });
+        await loadPdfFile(f);
+        statusText.textContent = "한글 원본 조판 PDF · " + pages + "쪽 · " + Math.round(blob.size / 1024) + "KB";
+      } catch (err) { alert("PDF 오류: " + err.message); }
+    };
+
+    window.__mamaHwpxFromHwp = async function (file) {
+      if (!file) { alert("파일이 없습니다."); return; }
+      try {
+        statusText.textContent = "한글 엔진으로 hwp 를 hwpx 로 변환 중...";
+        const res = await fetch("/convert-hwpx?name=" + encodeURIComponent(file.name), {
+          method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: await file.arrayBuffer()
+        });
+        if (!res.ok) {
+          let d = ""; try { const j = await res.json(); d = JSON.stringify(j.detail || j); } catch (e) {}
+          statusText.textContent = "hwpx 변환 실패 HTTP " + res.status;
+          alert("hwpx 변환 실패 (HTTP " + res.status + ")\n" + d);
+          return;
+        }
+        const blob = await res.blob();
+        const f = new File([blob], file.name.replace(/\.[^.]+$/, "") + ".hwpx", { type: "application/x-hwp+zip" });
+        await loadHwpxFile(f);
+        statusText.textContent = "hwpx 변환 완료 · 이제 편집할 수 있습니다 (" + Math.round(blob.size / 1024) + "KB)";
+      } catch (err) { alert("변환 오류: " + err.message); }
+    };
+
     function handleFile(file) {
+      currentSourceFile = file;
       const name = file.name;
       const ext = name.split('.').pop().toLowerCase();
       statusText.textContent = `${name} 파일 로딩 중...`;
@@ -793,6 +870,13 @@
     function setupHeader(type, name) {
       currentFileType = type;
       currentFileName = name;
+      btnNativeHwpxOpen.classList.toggle('hidden', (type !== 'hwpx' && type !== 'hwp') || !currentSourceFile || currentSourceFile.name !== name);
+      docPage.classList.toggle('hwpx-page', type === 'hwpx');
+      if (type !== 'hwpx') {
+        docPage.style.width = '';
+        docPage.style.minHeight = '';
+        docPage.style.padding = '';
+      }
       welcomeView.classList.add('hidden');
       btnClose.classList.remove('hidden');
       fileBadge.classList.remove('hidden');
@@ -1147,22 +1231,63 @@
         const parser = new DOMParser();
         const doc = parser.parseFromString(xmlText, 'text/xml');
 
+        const hangulFonts = {};
+        doc.querySelectorAll('fontface').forEach((face) => {
+          if ((face.getAttribute('lang') || '').toUpperCase() !== 'HANGUL') return;
+          face.querySelectorAll('font').forEach(font => {
+            hangulFonts[font.getAttribute('id')] = font.getAttribute('face');
+          });
+        });
+
         doc.querySelectorAll('charPr').forEach((node) => {
           const id = node.getAttribute('id');
           if (!id) return;
-          const bold = node.getAttribute('bold') === '1' || node.getAttribute('bold') === 'true';
-          const italic = node.getAttribute('italic') === '1' || node.getAttribute('italic') === 'true';
-          const underline = node.getAttribute('underline') && node.getAttribute('underline') !== 'none';
+          const bold = !!node.querySelector('bold') || node.getAttribute('bold') === '1' || node.getAttribute('bold') === 'true';
+          const italic = !!node.querySelector('italic') || node.getAttribute('italic') === '1' || node.getAttribute('italic') === 'true';
+          const underlineNode = node.querySelector('underline');
+          const underline = underlineNode ? (underlineNode.getAttribute('type') || '').toUpperCase() !== 'NONE' : !!node.getAttribute('underline') && node.getAttribute('underline').toUpperCase() !== 'NONE';
           const textColor = node.getAttribute('textColor') || '#000000';
           const height = parseInt(node.getAttribute('height') || '1000', 10);
-          hwpxStyles.charPrMap[id] = { bold, italic, underline, textColor, fontSizePt: height / 100 };
+          const fontId = node.querySelector('fontRef')?.getAttribute('hangul');
+          hwpxStyles.charPrMap[id] = { bold, italic, underline, textColor, fontSizePt: height / 100, fontFamily: hangulFonts[fontId] };
         });
 
         doc.querySelectorAll('paraPr').forEach((node) => {
           const id = node.getAttribute('id');
           if (!id) return;
-          const align = node.getAttribute('align') || 'left';
+          const align = (node.querySelector('align')?.getAttribute('horizontal') || node.getAttribute('align') || 'left').toLowerCase();
           hwpxStyles.paraPrMap[id] = { align };
+        });
+
+        // Parse borderFill tags (Universal HWPX Table Border Specification)
+        doc.querySelectorAll('borderFill').forEach((node) => {
+          const id = node.getAttribute('id');
+          if (!id) return;
+
+          function parseSideBorder(sideName) {
+            const sideNode = node.querySelector(sideName);
+            if (!sideNode) return { type: 'NONE', width: '0px', color: '#000000' };
+            const type = (sideNode.getAttribute('type') || 'NONE').toUpperCase();
+            let widthStr = sideNode.getAttribute('width') || '0.12 mm';
+            const color = sideNode.getAttribute('color') || '#000000';
+            
+            let px = 1;
+            if (widthStr.includes('mm')) {
+              const mm = parseFloat(widthStr);
+              px = Math.max(1, Math.round(mm * 3.78));
+            } else if (widthStr.includes('pt')) {
+              const pt = parseFloat(widthStr);
+              px = Math.max(1, Math.round(pt * 1.33));
+            }
+            return { type, px, color };
+          }
+
+          hwpxStyles.borderFillMap[id] = {
+            left: parseSideBorder('leftBorder'),
+            right: parseSideBorder('rightBorder'),
+            top: parseSideBorder('topBorder'),
+            bottom: parseSideBorder('bottomBorder')
+          };
         });
       } catch (e) {
         console.warn('HWPX 스타일 파싱 경고:', e);
@@ -1171,6 +1296,21 @@
 
     function renderHwpxDocument() {
       docContent.innerHTML = '';
+      const pagePr = hwpxSections[0]?.doc.querySelector('pagePr');
+      const pageMargin = pagePr?.querySelector('margin');
+      const toPx = value => `${(parseInt(value || '0', 10) / 75).toFixed(2)}px`;
+      if (pagePr) {
+        docPage.style.width = toPx(pagePr.getAttribute('width'));
+        docPage.style.minHeight = toPx(pagePr.getAttribute('height'));
+      }
+      if (pageMargin) {
+        docPage.style.padding = [
+          toPx(pageMargin.getAttribute('top')),
+          toPx(pageMargin.getAttribute('right')),
+          toPx(pageMargin.getAttribute('bottom')),
+          toPx(pageMargin.getAttribute('left'))
+        ].join(' ');
+      }
 
       hwpxSections.forEach((sec) => {
         const xmlDoc = sec.doc;
@@ -1180,7 +1320,7 @@
         Array.from(rootContainer.children).forEach((childNode) => {
           const nodeName = childNode.localName || childNode.nodeName.split(':').pop();
           if (nodeName === 'p') {
-            renderHwpxParagraphNode(childNode, docContent);
+            renderHwpxParagraphNode(childNode, docContent, sec.path);
           }
         });
       });
@@ -1188,7 +1328,7 @@
       applyEditMode();
     }
 
-    function renderHwpxParagraphNode(pNode, container) {
+    function renderHwpxParagraphNode(pNode, container, sectionPath) {
       let tblNode = null;
       for (const child of Array.from(pNode.children)) {
         const cName = child.localName || child.nodeName.split(':').pop();
@@ -1209,14 +1349,16 @@
       }
 
       if (tblNode) {
-        renderHwpxTable(tblNode, container);
+        renderHwpxTable(tblNode, container, sectionPath);
         return;
       }
 
       const pElem = document.createElement('p');
-      pElem.className = 'text-slate-800 leading-relaxed text-sm sm:text-base select-text break-words';
+      pElem.className = 'text-slate-800 select-text break-words';
+      pElem.dataset.hwpxParagraph = pNode.getAttribute('id') || '';
+      pElem.dataset.hwpxSection = sectionPath;
 
-      const paraPrID = pNode.getAttribute('paraPrID');
+      const paraPrID = pNode.getAttribute('paraPrIDRef') || pNode.getAttribute('paraPrID');
       if (paraPrID && hwpxStyles.paraPrMap[paraPrID]) {
         const align = hwpxStyles.paraPrMap[paraPrID].align;
         if (align === 'center') pElem.classList.add('text-center');
@@ -1238,74 +1380,348 @@
         }
         if (insideTable) return;
 
-        const tNode = run.querySelector('t');
-        if (tNode && tNode.textContent) {
-          hasRuns = true;
-          const span = document.createElement('span');
-          span.textContent = tNode.textContent;
-          const charPrID = run.getAttribute('charPrID');
-          if (charPrID && hwpxStyles.charPrMap[charPrID]) {
-            const style = hwpxStyles.charPrMap[charPrID];
-            if (style.bold) span.classList.add('font-bold');
-            if (style.italic) span.classList.add('italic');
-            if (style.underline) span.classList.add('underline');
-            if (style.textColor && style.textColor !== '#000000') span.style.color = style.textColor;
+        const tNodes = run.querySelectorAll('t');
+        tNodes.forEach(tNode => {
+          if (tNode && tNode.textContent) {
+            hasRuns = true;
+            const hasEllipse = run.querySelector('ellipse');
+            const hasPolygon = run.querySelector('polygon');
+            if (hasEllipse) {
+              const b = document.createElement('span');
+              b.className = 'inline-block mr-1.5 align-middle select-none';
+              b.dataset.hwpxDecoration = 'true';
+              b.innerHTML = '<span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:radial-gradient(circle at 35% 35%, #93c5fd, #1d4ed8 70%, #1e3a8a); box-shadow:0 1px 2px rgba(0,0,0,0.25);"></span>';
+              pElem.appendChild(b);
+            } else if (hasPolygon) {
+              const b = document.createElement('span');
+              b.className = 'inline-block mr-1.5 align-middle select-none text-[10px] text-blue-900';
+              b.dataset.hwpxDecoration = 'true';
+              b.innerHTML = '▶';
+              pElem.appendChild(b);
+            }
+            const span = document.createElement('span');
+            span.textContent = tNode.textContent;
+            const charPrID = run.getAttribute('charPrIDRef') || run.getAttribute('charPrID');
+            if (charPrID && hwpxStyles.charPrMap[charPrID]) {
+              const style = hwpxStyles.charPrMap[charPrID];
+              if (style.bold) span.classList.add('font-bold');
+              if (style.italic) span.classList.add('italic');
+              if (style.underline) span.classList.add('underline');
+              if (style.textColor && style.textColor !== '#000000') span.style.color = style.textColor;
+              if (style.fontSizePt) span.style.fontSize = `${style.fontSizePt}pt`;
+              if (style.fontFamily) span.style.fontFamily = `"${style.fontFamily}", sans-serif`;
+            }
+            pElem.appendChild(span);
           }
-          pElem.appendChild(span);
-        }
+        });
       });
 
       if (!hasRuns || !pElem.textContent.trim()) {
         pElem.innerHTML = '&nbsp;';
       }
+      pElem.dataset.hwpxOriginalText = getHwpxParagraphText(pNode);
       container.appendChild(pElem);
     }
 
-    function renderHwpxTable(tblNode, container) {
+    function getHwpxTextNodes(pNode) {
+      return Array.from(pNode.querySelectorAll('t')).filter(t => {
+        let parent = t.parentNode;
+        while (parent && parent !== pNode) {
+          if ((parent.localName || parent.nodeName.split(':').pop()) === 'p') return false;
+          parent = parent.parentNode;
+        }
+        return parent === pNode;
+      });
+    }
+
+    function getHwpxParagraphText(pNode) {
+      return getHwpxTextNodes(pNode).map(t => t.textContent || '').join('');
+    }
+
+    // Universal HWPX Table Renderer (Pixel-Perfect Alignment with Hancom Standard)
+    function renderHwpxTable(tblNode, container, sectionPath) {
       const tableWrapper = document.createElement('div');
       tableWrapper.className = 'w-full my-4 overflow-x-auto';
 
       const table = document.createElement('table');
-      table.className = 'w-full border-collapse border border-slate-400 text-xs sm:text-sm select-text bg-white shadow-sm';
+      table.className = 'w-full border-collapse select-text bg-white';
+      table.style.borderCollapse = 'collapse';
+      table.style.tableLayout = 'fixed';
 
-      const trNodes = tblNode.querySelectorAll('tr');
+      const colCnt = parseInt(tblNode.getAttribute('colCnt') || '0', 10);
+      const trNodes = Array.from(tblNode.querySelectorAll('tr')).filter(tr => {
+        let p = tr.parentNode;
+        while (p && (p.localName || p.nodeName.split(':').pop()) !== 'tbl') {
+          p = p.parentNode;
+        }
+        return p === tblNode;
+      });
+
+      // 1. Dynamic Column Width Calculation (<colgroup>) from cellSz
+      const colWidthMap = {};
+      let totalCalculatedWidth = 0;
+
+      trNodes.forEach(tr => {
+        const tcs = Array.from(tr.querySelectorAll('tc')).filter(tc => {
+          let p = tc.parentNode;
+          while (p && (p.localName || p.nodeName.split(':').pop()) !== 'tr') p = p.parentNode;
+          return p === tr;
+        });
+
+        tcs.forEach(tc => {
+          const colAddrNode = tc.querySelector('cellAddr');
+          const colAddr = colAddrNode ? parseInt(colAddrNode.getAttribute('colAddr') || '0', 10) : parseInt(tc.getAttribute('colAddr') || '0', 10);
+          
+          let colSpan = 1;
+          const cellSpanNode = tc.querySelector('cellSpan');
+          if (cellSpanNode) {
+            colSpan = parseInt(cellSpanNode.getAttribute('colSpan') || '1', 10);
+          } else {
+            colSpan = parseInt(tc.getAttribute('colSpan') || '1', 10);
+          }
+
+          if (colSpan === 1 && !colWidthMap[colAddr]) {
+            const cellSzNode = tc.querySelector('cellSz');
+            const w = cellSzNode ? parseInt(cellSzNode.getAttribute('width') || '0', 10) : parseInt(tc.getAttribute('width') || '0', 10);
+            if (w > 0) {
+              colWidthMap[colAddr] = w;
+            }
+          }
+        });
+      });
+
+      if (colCnt > 0) {
+        const colgroup = document.createElement('colgroup');
+        for (let c = 0; c < colCnt; c++) {
+          totalCalculatedWidth += (colWidthMap[c] || 1000);
+        }
+        for (let c = 0; c < colCnt; c++) {
+          const col = document.createElement('col');
+          const w = colWidthMap[c] || 1000;
+          const pct = ((w / totalCalculatedWidth) * 100).toFixed(2);
+          col.style.width = pct + '%';
+          colgroup.appendChild(col);
+        }
+        table.appendChild(colgroup);
+      }
+
+      // 2. Render Rows and Cells with Exact Pixel Alignment (Exact Hancom Coordinate System)
+      const HWPUNIT_TO_PX = 1.33333333 / 100;
+
       trNodes.forEach((trNode, rIdx) => {
         const trElem = document.createElement('tr');
-        trElem.className = 'border-b border-slate-300';
 
-        const tcNodes = trNode.querySelectorAll('tc');
-        tcNodes.forEach((tcNode) => {
-          let directParentTr = tcNode.parentNode;
-          while (directParentTr && (directParentTr.localName || directParentTr.nodeName.split(':').pop()) !== 'tr') {
-            directParentTr = directParentTr.parentNode;
+        const tcNodes = Array.from(trNode.querySelectorAll('tc')).filter(tc => {
+          let p = tc.parentNode;
+          while (p && (p.localName || p.nodeName.split(':').pop()) !== 'tr') {
+            p = p.parentNode;
           }
-          if (directParentTr !== trNode) return;
+          return p === trNode;
+        });
 
+        // 행 고유 높이 계산 (단일 행 셀의 cellSz height 기준)
+        let maxRowHeight = 0;
+        tcNodes.forEach(tc => {
+          const cellSpanNode = tc.querySelector('cellSpan');
+          let rowSpan = cellSpanNode ? parseInt(cellSpanNode.getAttribute('rowSpan') || '1', 10) : parseInt(tc.getAttribute('rowSpan') || '1', 10);
+          const cellSzNode = tc.querySelector('cellSz');
+          const h = cellSzNode ? parseInt(cellSzNode.getAttribute('height') || '0', 10) : 0;
+          if (rowSpan === 1 && h > maxRowHeight) maxRowHeight = h;
+        });
+
+        const targetRowPxHeight = maxRowHeight > 0 ? Math.round(maxRowHeight * HWPUNIT_TO_PX) : 0;
+        if (targetRowPxHeight > 0) {
+          trElem.style.height = targetRowPxHeight + 'px';
+        }
+
+        tcNodes.forEach((tcNode) => {
           const tdElem = document.createElement('td');
-          tdElem.className = 'border border-slate-400 p-1.5 sm:p-2 align-middle text-slate-800 break-words whitespace-pre-line';
+          tdElem.className = 'text-slate-800 break-words';
+          tdElem.style.boxSizing = 'border-box';
 
-          const colSpan = tcNode.getAttribute('colSpan');
-          const rowSpan = tcNode.getAttribute('rowSpan');
-          if (colSpan && parseInt(colSpan, 10) > 1) tdElem.colSpan = parseInt(colSpan, 10);
-          if (rowSpan && parseInt(rowSpan, 10) > 1) tdElem.rowSpan = parseInt(rowSpan, 10);
+          let colSpan = 1;
+          let rowSpan = 1;
+          const cellSpanNode = tcNode.querySelector('cellSpan');
+          if (cellSpanNode) {
+            colSpan = parseInt(cellSpanNode.getAttribute('colSpan') || '1', 10);
+            rowSpan = parseInt(cellSpanNode.getAttribute('rowSpan') || '1', 10);
+          } else {
+            colSpan = parseInt(tcNode.getAttribute('colSpan') || '1', 10);
+            rowSpan = parseInt(tcNode.getAttribute('rowSpan') || '1', 10);
+          }
 
-          let cellHasContent = false;
-          const cellPs = tcNode.querySelectorAll('p');
-          cellPs.forEach((p) => {
-            const tNodes = p.querySelectorAll('t');
-            tNodes.forEach((t) => {
-              if (t.textContent) {
-                cellHasContent = true;
-                const span = document.createElement('span');
-                span.textContent = t.textContent;
-                tdElem.appendChild(span);
-              }
-            });
+          if (colSpan > 1) tdElem.colSpan = colSpan;
+          if (rowSpan > 1) tdElem.rowSpan = rowSpan;
+
+          // Border 스타일
+          const bfRef = tcNode.getAttribute('borderFillIDRef') || tblNode.getAttribute('borderFillIDRef');
+          if (bfRef && hwpxStyles.borderFillMap[bfRef]) {
+            const bf = hwpxStyles.borderFillMap[bfRef];
+            applyHwpxSideBorder(tdElem, 'borderLeft', bf.left);
+            applyHwpxSideBorder(tdElem, 'borderRight', bf.right);
+            applyHwpxSideBorder(tdElem, 'borderTop', bf.top);
+            applyHwpxSideBorder(tdElem, 'borderBottom', bf.bottom);
+          } else {
+            tdElem.style.border = '1px solid #94a3b8';
+          }
+
+          const cellSzNode = tcNode.querySelector('cellSz');
+          const cellH = cellSzNode ? parseInt(cellSzNode.getAttribute('height') || '0', 10) : 0;
+          const cellPxH = cellH > 0 ? Math.round(cellH * HWPUNIT_TO_PX) : 0;
+
+          const isMultiRow = rowSpan > 1;
+
+          // 문단 목록 수집
+          const cellPs = Array.from(tcNode.querySelectorAll('p')).filter(cp => {
+            let p = cp.parentNode;
+            while (p && (p.localName || p.nodeName.split(':').pop()) !== 'tc') {
+              p = p.parentNode;
+            }
+            return true;
           });
 
-          if (!cellHasContent) {
-            tdElem.innerHTML = '&nbsp;';
+          if (isMultiRow) {
+            // 다중 행 병합 셀(rowSpan > 1): vertpos 기반 절대 좌표 정밀 배치
+            tdElem.style.verticalAlign = 'top';
+            tdElem.style.position = 'relative';
+            tdElem.style.padding = '0';
+            if (cellPxH > 0) tdElem.style.height = cellPxH + 'px';
+
+            const container = document.createElement('div');
+            container.style.position = 'relative';
+            container.style.width = '100%';
+            if (cellPxH > 0) container.style.height = cellPxH + 'px';
+
+            cellPs.forEach(p => {
+              const lineseg = p.querySelector('lineseg');
+              const vertpos = lineseg ? parseInt(lineseg.getAttribute('vertpos') || '0', 10) : 0;
+              const topPx = Math.round(vertpos * HWPUNIT_TO_PX);
+
+              const pDiv = document.createElement('div');
+              pDiv.className = 'select-text';
+              pDiv.dataset.hwpxParagraph = p.getAttribute('id') || '';
+              pDiv.dataset.hwpxSection = sectionPath;
+              pDiv.style.position = 'absolute';
+              pDiv.style.left = '6px';
+              pDiv.style.right = '6px';
+              pDiv.style.top = topPx + 'px';
+              pDiv.style.whiteSpace = 'nowrap';
+
+              // 문단 정렬
+              const paraPrID = p.getAttribute('paraPrIDRef') || p.getAttribute('paraPrID');
+              if (paraPrID && hwpxStyles.paraPrMap[paraPrID]) {
+                const align = hwpxStyles.paraPrMap[paraPrID].align;
+                if (align === 'center') pDiv.style.textAlign = 'center';
+                else if (align === 'right') pDiv.style.textAlign = 'right';
+                else if (align === 'left') pDiv.style.textAlign = 'left';
+              }
+
+              // 런(Run) 및 볼릿 렌더링
+              const runs = p.querySelectorAll('run');
+              let pHasRun = false;
+              runs.forEach(run => {
+                const hasEllipse = run.querySelector('ellipse');
+                const hasPolygon = run.querySelector('polygon');
+
+                if (hasEllipse) {
+                  pHasRun = true;
+                  const bullet = document.createElement('span');
+                  bullet.className = 'inline-block mr-1.5 align-middle select-none';
+                  bullet.dataset.hwpxDecoration = 'true';
+                  bullet.innerHTML = '<span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:radial-gradient(circle at 35% 35%, #93c5fd, #1d4ed8 70%, #1e3a8a); box-shadow:0 1px 2px rgba(0,0,0,0.25);"></span>';
+                  pDiv.appendChild(bullet);
+                } else if (hasPolygon) {
+                  pHasRun = true;
+                  const bullet = document.createElement('span');
+                  bullet.className = 'inline-block mr-1.5 align-middle select-none text-[10px] text-blue-900';
+                  bullet.dataset.hwpxDecoration = 'true';
+                  bullet.innerHTML = '▶';
+                  pDiv.appendChild(bullet);
+                }
+
+                const tNodes = run.querySelectorAll('t');
+                tNodes.forEach(tNode => {
+                  if (tNode && tNode.textContent !== undefined && tNode.textContent !== '') {
+                    pHasRun = true;
+                    const span = document.createElement('span');
+                    span.textContent = tNode.textContent;
+                    const charPrID = run.getAttribute('charPrIDRef') || run.getAttribute('charPrID');
+                    if (charPrID && hwpxStyles.charPrMap[charPrID]) {
+                      const st = hwpxStyles.charPrMap[charPrID];
+                      if (st.bold) span.classList.add('font-bold');
+                      if (st.italic) span.classList.add('italic');
+                      if (st.underline) span.classList.add('underline');
+                      if (st.textColor && st.textColor !== '#000000') span.style.color = st.textColor;
+                      if (st.fontSizePt) span.style.fontSize = `${st.fontSizePt}pt`;
+                      if (st.fontFamily) span.style.fontFamily = `"${st.fontFamily}", sans-serif`;
+                    }
+                    pDiv.appendChild(span);
+                  }
+                });
+              });
+
+              if (!pHasRun || !pDiv.textContent.trim()) {
+                pDiv.innerHTML = '&nbsp;';
+              }
+              pDiv.dataset.hwpxOriginalText = getHwpxParagraphText(p);
+              container.appendChild(pDiv);
+            });
+
+            tdElem.appendChild(container);
+          } else {
+            // 단일 행 셀: 정확한 행 높이 유지 + 텍스트 중앙 배치
+            tdElem.style.verticalAlign = 'middle';
+            tdElem.style.textAlign = 'center';
+            tdElem.style.padding = '2px 4px';
+            const finalPxH = targetRowPxHeight || cellPxH;
+            if (finalPxH > 0) tdElem.style.height = finalPxH + 'px';
+
+            let cellHasContent = false;
+            cellPs.forEach(p => {
+              const pDiv = document.createElement('div');
+              pDiv.className = 'select-text';
+              pDiv.dataset.hwpxParagraph = p.getAttribute('id') || '';
+              pDiv.dataset.hwpxSection = sectionPath;
+
+              const paraPrID = p.getAttribute('paraPrIDRef') || p.getAttribute('paraPrID');
+              if (paraPrID && hwpxStyles.paraPrMap[paraPrID]) {
+                const align = hwpxStyles.paraPrMap[paraPrID].align;
+                if (align === 'center') pDiv.style.textAlign = 'center';
+                else if (align === 'right') pDiv.style.textAlign = 'right';
+                else if (align === 'left') pDiv.style.textAlign = 'left';
+              }
+
+              const runs = p.querySelectorAll('run');
+              runs.forEach(run => {
+                const tNodes = run.querySelectorAll('t');
+                tNodes.forEach(tNode => {
+                  if (tNode && tNode.textContent !== undefined && tNode.textContent !== '') {
+                    cellHasContent = true;
+                    const span = document.createElement('span');
+                    span.textContent = tNode.textContent;
+                    if (tNode.textContent.trim() === '여' || tNode.textContent.trim() === '부') {
+                      pDiv.style.textAlign = 'center';
+                    }
+                    const charPrID = run.getAttribute('charPrIDRef') || run.getAttribute('charPrID');
+                    if (charPrID && hwpxStyles.charPrMap[charPrID]) {
+                      const st = hwpxStyles.charPrMap[charPrID];
+                      if (st.bold) span.classList.add('font-bold');
+                      if (st.fontSizePt) span.style.fontSize = `${st.fontSizePt}pt`;
+                    }
+                    pDiv.appendChild(span);
+                  }
+                });
+              });
+
+              pDiv.dataset.hwpxOriginalText = getHwpxParagraphText(p);
+              tdElem.appendChild(pDiv);
+            });
+
+            if (!cellHasContent) {
+              tdElem.innerHTML = '&nbsp;';
+            }
           }
+
           trElem.appendChild(tdElem);
         });
 
@@ -1316,28 +1732,57 @@
       container.appendChild(tableWrapper);
     }
 
+    function applyHwpxSideBorder(element, styleProp, borderDef) {
+      if (!borderDef || borderDef.type === 'NONE') {
+        element.style[styleProp] = 'none';
+        return;
+      }
+      const color = borderDef.color || '#000000';
+      const px = borderDef.px || 1;
+
+      if (borderDef.type === 'DOUBLE_SLIM' || borderDef.type === 'DOUBLE') {
+        element.style[styleProp] = `3px double ${color}`;
+      } else if (borderDef.type === 'DASH') {
+        element.style[styleProp] = `${px}px dashed ${color}`;
+      } else if (borderDef.type === 'DOT') {
+        element.style[styleProp] = `${px}px dotted ${color}`;
+      } else {
+        element.style[styleProp] = `${px}px solid ${color}`;
+      }
+    }
+
     async function saveHwpxFile() {
       try {
         statusText.textContent = '수정된 HWPX 문서를 패키징하는 중...';
-        const pElems = docContent.querySelectorAll('p');
-        const firstSection = hwpxSections[0];
-
-        if (firstSection && pElems.length > 0) {
-          const xmlDoc = firstSection.doc;
-          const pNodes = xmlDoc.querySelectorAll('p');
-          pElems.forEach((pElem, idx) => {
-            if (pNodes[idx]) {
-              const tNode = pNodes[idx].querySelector('t');
-              if (tNode && pElem.textContent.trim()) {
-                tNode.textContent = pElem.textContent;
-              }
-            }
+        const sectionMap = new Map(hwpxSections.map(section => [section.path, section]));
+        const changedSections = new Set();
+        const paragraphMap = new Map();
+        hwpxSections.forEach(section => {
+          section.doc.querySelectorAll('p').forEach(p => {
+            paragraphMap.set(`${section.path}:${p.getAttribute('id')}`, p);
           });
+        });
 
-          const serializer = new XMLSerializer();
-          const updatedXml = serializer.serializeToString(xmlDoc);
-          originalHwpxZip.file(firstSection.path, updatedXml);
-        }
+        docContent.querySelectorAll('[data-hwpx-paragraph][data-hwpx-section]').forEach(element => {
+          const sectionPath = element.dataset.hwpxSection;
+          const pNode = paragraphMap.get(`${sectionPath}:${element.dataset.hwpxParagraph}`);
+          if (!pNode) return;
+          const content = element.cloneNode(true);
+          content.querySelectorAll('[data-hwpx-decoration]').forEach(node => node.remove());
+          const editedText = content.textContent.replace(/\u00a0/g, ' ');
+          const originalText = element.dataset.hwpxOriginalText || '';
+          if (editedText === originalText || (!editedText.trim() && !originalText.trim())) return;
+          const textNodes = getHwpxTextNodes(pNode);
+          if (!textNodes.length) return;
+          textNodes[0].textContent = editedText;
+          textNodes.slice(1).forEach(node => { node.textContent = ''; });
+          changedSections.add(sectionPath);
+        });
+
+        const serializer = new XMLSerializer();
+        changedSections.forEach(path => {
+          originalHwpxZip.file(path, serializer.serializeToString(sectionMap.get(path).doc));
+        });
 
         const blob = await originalHwpxZip.generateAsync({
           type: 'blob',
@@ -1605,7 +2050,7 @@
     document.getElementById('btn-doc-redo').addEventListener('click', () => document.execCommand('redo'));
     document.getElementById('btn-doc-bold').addEventListener('click', () => document.execCommand('bold'));
     document.getElementById('btn-doc-underline').addEventListener('click', () => document.execCommand('underline'));
-    document.getElementById('btn-doc-hilite').addEventListener('click', () => document.execCommand('hiliteColor', false, '#fef08a'));
+    // btn-doc-hilite replaced by color input in v10
     document.getElementById('btn-doc-align-left').addEventListener('click', () => document.execCommand('justifyLeft'));
     document.getElementById('btn-doc-align-center').addEventListener('click', () => document.execCommand('justifyCenter'));
     document.getElementById('btn-doc-align-right').addEventListener('click', () => document.execCommand('justifyRight'));
@@ -1981,6 +2426,63 @@
       txtZoom.textContent = `${Math.round(docZoom * 100)}%`;
     });
 
+    let hwpHotReloadTimer = null;
+    let currentHwpSessionId = null;
+
+    function startHwpHotReload(sessionId, fileType) {
+      if (hwpHotReloadTimer) clearInterval(hwpHotReloadTimer);
+      currentHwpSessionId = sessionId;
+
+      hwpHotReloadTimer = setInterval(async () => {
+        try {
+          const pollRes = await fetch(`/poll?session=${encodeURIComponent(sessionId)}`);
+          if (!pollRes.ok) return;
+          const pollData = await pollRes.json();
+          if (pollData.changed) {
+            statusText.textContent = '한글에서 수정된 내용을 감지했습니다. 최신본으로 동기화 중...';
+            const dlRes = await fetch(`/download?session=${encodeURIComponent(sessionId)}`);
+            if (!dlRes.ok) throw new Error('파일 다운로드 실패');
+            const blob = await dlRes.blob();
+            const updatedFile = new File([blob], currentFileName, { type: blob.type || 'application/octet-stream' });
+            currentSourceFile = updatedFile;
+
+            if (fileType === 'hwpx') {
+              await loadHwpxFile(updatedFile);
+            } else if (fileType === 'hwp') {
+              loadHwpBinaryFile(updatedFile);
+            }
+            statusText.textContent = `한글 수정사항 동기화 완료 (${new Date().toLocaleTimeString()})`;
+          }
+        } catch (err) {
+          console.warn('Hot reload poll error:', err);
+        }
+      }, 1500);
+    }
+
+    btnNativeHwpxOpen.addEventListener('click', async () => {
+      if (!currentSourceFile || (currentFileType !== 'hwpx' && currentFileType !== 'hwp')) return;
+      btnNativeHwpxOpen.disabled = true;
+      statusText.textContent = '한컴 한글 2024로 문서를 여는 중...';
+      try {
+        const response = await fetch(`/open?name=${encodeURIComponent(currentSourceFile.name)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/octet-stream' },
+          body: await currentSourceFile.arrayBuffer()
+        });
+        const result = await response.json();
+        if (!response.ok || !result.ok) throw new Error(result.message || `로컬 연결 오류 (${response.status})`);
+        statusText.textContent = `한컴 한글에서 문서를 열었습니다. 한글에서 저장(Ctrl+S) 시 자동 동기화됩니다.`;
+        if (result.sessionId) {
+          startHwpHotReload(result.sessionId, currentFileType);
+        }
+      } catch (error) {
+        statusText.textContent = '한글 연결 도우미에 연결할 수 없습니다.';
+        alert('한글 연결 도우미를 실행하지 못했습니다.\n\n' + error.message);
+      } finally {
+        btnNativeHwpxOpen.disabled = false;
+      }
+    });
+
     // --------------------------------------------------------------------------
     // Quick Samples
     // --------------------------------------------------------------------------
@@ -2003,6 +2505,7 @@
     });
 
     document.getElementById('btn-sample-hwpx').addEventListener('click', () => {
+      currentSourceFile = null;
       docContent.innerHTML = `
         <p class="text-slate-900 font-bold text-center text-lg sm:text-xl my-3 sm:my-4 tracking-wider">어르신 일일 건강체크 관리대장</p>
         <p class="text-right text-[11px] sm:text-xs text-slate-500 mb-2">작성일자: 2026년 10월 26일</p>
@@ -2094,6 +2597,7 @@
     // Create Blank HWPX Doc
     function createBlankDoc() {
       if (newDocMenu) newDocMenu.classList.add('hidden');
+      currentSourceFile = null;
       docContent.innerHTML = `
         <h1 class="text-slate-900 font-bold text-center text-xl sm:text-2xl my-3 tracking-wider" style="outline: none;">새 문서 제목을 입력하세요</h1>
         <p class="text-right text-xs text-slate-400 mb-4" style="outline: none;">작성일: ${new Date().toLocaleDateString('ko-KR')}</p>
@@ -2307,5 +2811,10 @@
       });
     }
   </script>
+<script src="./mama-ext.js"></script>
+  <script src="./mama-fix.js"></script>
+  <script type="module" src="./mama-rhwp.js"></script>
+<script src="./mama-svgid.js"></script>
+<script src="./mama-mode.js"></script>
 </body>
 </html>
