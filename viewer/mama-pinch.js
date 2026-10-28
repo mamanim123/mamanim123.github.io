@@ -1,9 +1,9 @@
-/* mama-pinch.js : 모바일 두 손가락 확대/축소 (문서 영역만, 상단 메뉴는 고정) */
+/* mama-pinch.js v2 : 두 손가락 확대/축소 + 두 번 탭(폭 맞춤<->100%) + 폰에서 한글 문서 자동 폭 맞춤 */
 (function () {
   'use strict';
   if (localStorage.getItem('mamaPinch') === 'off') return;
   var TAG = '[mama-pinch]', MIN = 0.3, MAX = 4;
-  var g = null, raf = 0, pend = null;
+  var g = null, raf = 0, pend = null, tapS = null, lastTap = null, pinched = false;
 
   function scroller(el) {
     for (; el && el !== document.body && el !== document.documentElement; el = el.parentElement) {
@@ -19,56 +19,118 @@
       return cs.display !== 'none' && cs.position !== 'fixed';
     });
   }
+  function curZ(kids) { return parseFloat(kids[0].style.zoom) || 1; }
+  function label(sc, z) {
+    if (sc.id !== 'rhwp-scroll') return;
+    var lb = document.getElementById('rhwp-zoom');
+    if (lb) lb.textContent = Math.round(z * 100) + '%';
+  }
+  function zoomTo(sc, kids, z, cx, cy) {
+    var old = curZ(kids);
+    z = Math.min(MAX, Math.max(MIN, z));
+    if (Math.abs(z - old) < 0.005) return old;
+    var r = sc.getBoundingClientRect();
+    if (cx == null) { cx = r.left + sc.clientWidth / 2; cy = r.top + sc.clientHeight / 2; }
+    var px = sc.scrollLeft + cx - r.left, py = sc.scrollTop + cy - r.top;
+    kids.forEach(function (k) { k.style.zoom = z; });
+    var ratio = z / old;
+    sc.scrollLeft = px * ratio - (cx - r.left);
+    sc.scrollTop = py * ratio - (cy - r.top);
+    label(sc, z);
+    return z;
+  }
+  function fitZ(sc, kids) {
+    var old = curZ(kids), w = 0;
+    kids.forEach(function (k) { k.style.zoom = 1; });
+    kids.forEach(function (k) { w = Math.max(w, k.scrollWidth); });
+    kids.forEach(function (k) { k.style.zoom = old; });
+    var cs = getComputedStyle(sc);
+    var avail = sc.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    return w > 0 ? Math.min(MAX, Math.max(MIN, Math.floor(avail / w * 100) / 100)) : 1;
+  }
   function dist(t) { var dx = t[0].clientX - t[1].clientX, dy = t[0].clientY - t[1].clientY; return Math.sqrt(dx * dx + dy * dy) || 1; }
   function mid(t) { return { x: (t[0].clientX + t[1].clientX) / 2, y: (t[0].clientY + t[1].clientY) / 2 }; }
 
   function apply() {
     raf = 0;
     if (!g || !pend) return;
-    var z = pend.z, old = g.z, sc = g.sc;
-    if (Math.abs(z - old) < 0.005) return;
-    var r = sc.getBoundingClientRect();
-    var px = sc.scrollLeft + pend.x - r.left, py = sc.scrollTop + pend.y - r.top;
-    g.kids.forEach(function (k) { k.style.zoom = z; });
-    g.z = z;
-    var ratio = z / old;
-    sc.scrollLeft = px * ratio - (pend.x - r.left);
-    sc.scrollTop = py * ratio - (pend.y - r.top);
-    if (sc.id === 'rhwp-scroll') {
-      var lb = document.getElementById('rhwp-zoom');
-      if (lb) lb.textContent = Math.round(z * 100) + '%';
-    }
+    g.z = zoomTo(g.sc, g.kids, pend.z, pend.x, pend.y);
   }
 
   document.addEventListener('touchstart', function (e) {
+    if (e.touches.length === 1) {
+      var t = e.touches[0];
+      tapS = { x: t.clientX, y: t.clientY, t: Date.now(), target: t.target };
+      pinched = false;
+      return;
+    }
+    tapS = null;
     if (e.touches.length !== 2) return;
     var sc = scroller(e.touches[0].target);
     if (!sc || !sc.contains(e.touches[1].target)) return;
     var kids = kidsOf(sc);
     if (!kids.length) return;
-    var z0 = parseFloat(kids[0].style.zoom) || 1;
+    var z0 = curZ(kids);
     g = { sc: sc, kids: kids, z0: z0, z: z0, d0: dist(e.touches) };
+    pinched = true;
   }, { passive: true });
 
   document.addEventListener('touchmove', function (e) {
+    if (tapS && e.touches.length === 1) {
+      var t = e.touches[0];
+      if (Math.abs(t.clientX - tapS.x) > 10 || Math.abs(t.clientY - tapS.y) > 10) tapS = null;
+    }
     if (!g || e.touches.length !== 2) return;
     e.preventDefault();
     var m = mid(e.touches);
-    var z = Math.min(MAX, Math.max(MIN, g.z0 * dist(e.touches) / g.d0));
-    pend = { z: z, x: m.x, y: m.y };
+    pend = { z: g.z0 * dist(e.touches) / g.d0, x: m.x, y: m.y };
     if (!raf) raf = requestAnimationFrame(apply);
   }, { passive: false });
+
+  function doubleTap(x, y, target) {
+    if (target.closest && target.closest('button,a,input,select,textarea,[contenteditable="true"]')) return;
+    var sc = scroller(target);
+    if (!sc) return;
+    var kids = kidsOf(sc);
+    if (!kids.length) return;
+    var f = fitZ(sc, kids), z = curZ(kids), nz;
+    if (Math.abs(z - f) < 0.03) nz = Math.abs(f - 1) < 0.03 ? 2 : 1;
+    else nz = f;
+    nz = zoomTo(sc, kids, nz, x, y);
+    console.info(TAG, '두 번 탭 →', Math.round(nz * 100) + '%');
+  }
 
   function end(e) {
     if (g && e.touches.length < 2) {
       console.info(TAG, '배율', Math.round(g.z * 100) + '%');
       g = null; pend = null;
     }
+    if (e.type === 'touchend' && e.touches.length === 0 && tapS && !pinched && Date.now() - tapS.t < 250) {
+      var t = e.changedTouches[0], now = Date.now();
+      if (lastTap && now - lastTap.t < 320 && Math.abs(t.clientX - lastTap.x) < 30 && Math.abs(t.clientY - lastTap.y) < 30) {
+        doubleTap(t.clientX, t.clientY, tapS.target);
+        lastTap = null;
+      } else lastTap = { x: t.clientX, y: t.clientY, t: now };
+    }
+    if (e.touches.length === 0) tapS = null;
   }
   document.addEventListener('touchend', end, { passive: true });
   document.addEventListener('touchcancel', end, { passive: true });
-  /* iOS 사파리: 페이지 전체 확대 막기 (문서 영역 확대는 위 코드가 담당) */
   document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
 
-  console.info(TAG, '준비 완료 (끄기: localStorage.mamaPinch="off")');
+  /* 폰(폭 900px 미만)에서 한글 문서를 열면 화면 폭에 맞춤 */
+  var fitted = new WeakSet(), ft = 0;
+  function autoFit() {
+    var pages = document.getElementById('rhwp-pages'), sc = document.getElementById('rhwp-scroll');
+    if (!pages || !sc || !pages.firstElementChild || fitted.has(pages.firstElementChild) || !sc.clientWidth) return;
+    fitted.add(pages.firstElementChild);
+    if (window.innerWidth >= 900) return;
+    var f = Math.min(1, fitZ(sc, [pages]));
+    pages.style.zoom = f; sc.scrollLeft = 0; sc.scrollTop = 0; label(sc, f);
+    console.info(TAG, '폭 맞춤', Math.round(f * 100) + '%');
+  }
+  new MutationObserver(function () { clearTimeout(ft); ft = setTimeout(autoFit, 250); })
+    .observe(document.body, { childList: true, subtree: true });
+
+  console.info(TAG, 'v2 준비 완료 (끄기: localStorage.mamaPinch="off")');
 })();
