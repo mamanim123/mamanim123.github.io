@@ -29,8 +29,9 @@
   const clearAll = () => run('readwrite', s => s.clear());
   async function save(file) {
     if (!file || !file.name || file.size > MAXSZ) return;
+    const data = new Blob([await file.arrayBuffer()], { type: file.type || '' });
     await run('readwrite', s => s.put({ id: file.name + '|' + file.size, name: file.name, size: file.size,
-      type: file.type || '', time: Date.now(), blob: file }));
+      type: file.type || '', time: Date.now(), blob: data }));
     const all = await list();
     for (const r of all.slice(KEEP)) await del(r.id);
   }
@@ -115,11 +116,22 @@
   const prev = window.handleFile;
   if (typeof prev === 'function') {
     window.handleFile = function (file) {
-      if (file && file.name) save(file).then(render).catch(e => console.warn(TAG, '최근 목록 저장 실패', e));
-      return prev.apply(this, arguments);
+      if (file && file.name) setTimeout(() => save(file).then(render).catch(e => console.warn(TAG, '최근 목록 저장 실패', e)), 3000);
+      try { return prev.apply(this, arguments); } catch (e) { console.error(TAG, '열기 오류', e); throw e; }
     };
   } else console.warn(TAG, 'handleFile 없음 → 최근 목록 저장 안 됨');
 
+  /* 파일 선택창 열 때마다 이전 선택 지우기 (같은 파일 다시 골라도 열리게) */
+  document.addEventListener('click', ev => {
+    const i = ev.target && ev.target.closest && ev.target.closest('#file-input');
+    if (i) i.value = '';
+  }, true);
+  document.addEventListener('change', ev => {
+    if (ev.target && ev.target.id === 'file-input') {
+      const f = ev.target.files && ev.target.files[0];
+      console.info(TAG, '파일 선택됨:', f ? f.name : '(없음)');
+    }
+  }, true);
   let t = 0;
   new MutationObserver(() => { clearTimeout(t); t = setTimeout(mount, 400); })
     .observe(document.body, { childList: true, subtree: true });
