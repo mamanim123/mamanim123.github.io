@@ -112,8 +112,8 @@ $('rhwp-hwp').onclick = async () => {
     statusText.textContent = j.ok ? '한글에서 열었습니다.' : ('한글 열기 실패: ' + j.message);
   } catch (e) { alert('한글 열기 오류: ' + e.message); }
 };
-$('rhwp-zin').onclick  = () => setZoom(zoom + 0.1);
-$('rhwp-zout').onclick = () => setZoom(zoom - 0.1);
+$('rhwp-zin').onclick  = () => setZoom((parseFloat(pagesEl.style.zoom) || 1) + 0.1);
+$('rhwp-zout').onclick = () => setZoom((parseFloat(pagesEl.style.zoom) || 1) - 0.1);
 $('rhwp-print').onclick = () => window.print();
 btnClose.addEventListener('click', hideView);
 
